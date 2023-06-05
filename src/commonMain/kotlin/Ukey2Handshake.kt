@@ -24,10 +24,13 @@ import com.carterharrison.ecdsa.hash.EcSha256
 import com.carterharrison.ecdsa.hash.EcSha512
 import com.google.security.cryptauth.lib.securegcm.*
 import com.google.security.cryptauth.lib.securegcm.Ukey2Alert.AlertType.*
+import com.google.security.cryptauth.lib.securegcm.Ukey2Handshake.HandshakeRole.*
 import com.google.security.cryptauth.lib.securegcm.Ukey2Message.Type.*
 import com.google.security.cryptauth.lib.securemessage.*
+import d2d.D2DConnectionContext
+import d2d.D2DConnectionContextV1
+import d2d.D2DCryptoOps.d2dSalt
 import hkdf
-import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.kotlincrypto.SecureRandom
 
@@ -185,7 +188,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
   private val ourKeyPair: EcKeyPair
   private lateinit var theirPublicKey: EcPoint
   private lateinit var derivedSecretKey: ByteArray
-  private lateinit var handshakeResultInternal: HandshakeResult
 
   // Servers need to store client commitments.
   private var theirCommitment: ByteArray? = null
@@ -235,8 +237,8 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
 
     handshakeCipher = cipher
     handshakeRole = when (state) {
-      InternalState.CLIENT_START -> HandshakeRole.CLIENT
-      InternalState.SERVER_START -> HandshakeRole.SERVER
+      InternalState.CLIENT_START -> CLIENT
+      InternalState.SERVER_START -> SERVER
       else -> {
         throwIllegalStateException("Invalid handshake state")
         throw IllegalStateException("unreachable")
@@ -347,8 +349,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
       throwIllegalStateException("Unexpected state: $handshakeState")
     }
     handshakeState = InternalState.HANDSHAKE_FINISHED
-
-    completeHandshake()
   }
 
   /**
@@ -401,14 +401,14 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    * @throws HandshakeException
    */
   @Throws(HandshakeException::class)
-  private fun completeHandshake() {
+  fun toConnectionContext(): D2DConnectionContext {
 
     require(handshakeState == InternalState.HANDSHAKE_FINISHED) {
       throwIllegalStateException("Unexpected state: $handshakeState")
       "Unexpected state: $handshakeState"
     }
 
-    require(::derivedSecretKey.isInitialized){
+    require(::derivedSecretKey.isInitialized) {
       throwIllegalStateException("Unexpected state error: derived key is null")
       "Unexpected state error: derived key is null"
     }
@@ -418,39 +418,18 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
 
     val nextProtocolKey = hkdf(derivedSecretKey, saltNext, info)
 
-    val saltD2D = byteArrayOf(
-      0x82.toByte(), 0xAA.toByte(), 0x55.toByte(), 0xA0.toByte(), 0xD3.toByte(),
-      0x97.toByte(), 0xF8.toByte(), 0x83.toByte(), 0x46.toByte(), 0xCA.toByte(),
-      0x1C.toByte(), 0xEE.toByte(), 0x8D.toByte(), 0x39.toByte(), 0x09.toByte(),
-      0xB9.toByte(), 0x5F.toByte(), 0x13.toByte(), 0xFA.toByte(), 0x7D.toByte(),
-      0xEB.toByte(), 0x1D.toByte(), 0x4A.toByte(), 0xB3.toByte(), 0x83.toByte(),
-      0x76.toByte(), 0xB8.toByte(), 0x25.toByte(), 0x6D.toByte(), 0xA8.toByte(),
-      0x55.toByte(), 0x10.toByte()
-    )
-
-    val clientKey: ByteArray = hkdf(nextProtocolKey, saltD2D, "client".encodeToByteArray(), 32)
-    val serverKey: ByteArray = hkdf(nextProtocolKey, saltD2D, "server".encodeToByteArray(), 32)
+    val clientKey: ByteArray = hkdf(nextProtocolKey, d2dSalt, "client".encodeToByteArray(), 32)
+    val serverKey: ByteArray = hkdf(nextProtocolKey, d2dSalt, "server".encodeToByteArray(), 32)
 
     handshakeState = InternalState.HANDSHAKE_ALREADY_USED
 
-    handshakeResultInternal = HandshakeResult(
-      encodeKey = if (handshakeRole == HandshakeRole.CLIENT) clientKey else serverKey,
-      decodeKey = if (handshakeRole == HandshakeRole.CLIENT) serverKey else clientKey,
+    return D2DConnectionContextV1(
+      encodeKey = if (handshakeRole == CLIENT) clientKey else serverKey,
+      decodeKey = if (handshakeRole == CLIENT) serverKey else clientKey,
+      0,
+      0
     )
   }
-
-  val handshakeResult: HandshakeResult
-    get() {
-      require(handshakeState == InternalState.HANDSHAKE_ALREADY_USED) {
-        "Unexpected handshake state. Should be 'HANDSHAKE_ALREADY_USED' instead is: $handshakeState"
-      }
-
-      require(::handshakeResultInternal.isInitialized) {
-        "Unexpected handshake result. The handshake result is not created"
-      }
-
-      return handshakeResultInternal
-    }
 
   /**
    * Generates the byte[] encoding of a [Ukey2ClientInit] message.
@@ -809,7 +788,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
 
   // Copied from MessageDigest.isEqual()
   private fun isEqualDigest(digesta: ByteArray?, digestb: ByteArray?): Boolean {
-    if (digesta.contentEquals(digestb)) return true
     if (digesta == null || digestb == null) {
       return false
     }
@@ -1046,25 +1024,4 @@ private class HandshakeException : Exception {
   constructor(message: String) : super(message)
   constructor(message: String, cause: Throwable) : super(message, cause)
   constructor(cause: Throwable) : super(cause)
-}
-
-data class HandshakeResult(
-  val encodeKey: ByteArray,
-  val decodeKey: ByteArray,
-) {
-  override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other == null || this::class != other::class) return false
-
-    other as HandshakeResult
-
-    if (!encodeKey.contentEquals(other.encodeKey)) return false
-    return decodeKey.contentEquals(other.decodeKey)
-  }
-
-  override fun hashCode(): Int {
-    var result = encodeKey.contentHashCode()
-    result = 31 * result + decodeKey.contentHashCode()
-    return result
-  }
 }

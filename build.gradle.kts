@@ -35,7 +35,7 @@ kotlin {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
         implementation("com.carterharrison:ecdsa:0.1.0-beta1")
         implementation("org.kotlincrypto:secure-random:0.1.0")
-//        implementation("com.ionspin.kotlin:bignum:0.3.8")
+        implementation("com.diglol.crypto:cipher:0.1.4")
       }
     }
 

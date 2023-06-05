@@ -15,7 +15,10 @@ package com.google.security.cryptauth.lib.securegcm
 // limitations under the License.
 
 import com.google.security.cryptauth.lib.securegcm.Ukey2Handshake.HandshakeCipher
+import org.junit.jupiter.api.Assertions.assertTrue
+import java.util.*
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 
 
 /**
@@ -53,10 +56,27 @@ class Ukey2CppCompatibilityTest {
     )
     javaUkey2Handshake.verifyHandshake()
 
-    val result = javaUkey2Handshake.handshakeResult
+    // Secure channel:
+    val javaSecureContext = javaUkey2Handshake.toConnectionContext()
 
-    assert(result.decodeKey.isNotEmpty())
-    assert(result.encodeKey.isNotEmpty())
+    // ukey2_shell encodes data:
+    var encodedData: ByteArray? = cppUkey2Shell.sendEncryptCommand(sPayload1)
+    var decodedData = javaSecureContext.decodeMessageFromPeer(encodedData!!)
+    assertTrue(sPayload1.contentEquals(decodedData))
+
+    // ukey2_shell decodes data:
+
+    // ukey2_shell decodes data:
+    encodedData = javaSecureContext.encodeMessageToPeer(sPayload2)
+    decodedData = cppUkey2Shell.sendDecryptCommand(encodedData)
+    assertTrue(sPayload2.contentEquals(decodedData))
+
+    // ukey2_shell session unique:
+
+    // ukey2_shell session unique:
+    val localSessionUnique = javaSecureContext.sessionUnique
+    val remoteSessionUnique = cppUkey2Shell.sendSessionUniqueCommand()
+    assertContentEquals(localSessionUnique, remoteSessionUnique)
 
     cppUkey2Shell.stopShell()
   }
@@ -86,16 +106,31 @@ class Ukey2CppCompatibilityTest {
     )
     javaUkey2Handshake.verifyHandshake()
 
-    val result = javaUkey2Handshake.handshakeResult
+    // Secure channel:
+    val javaSecureContext = javaUkey2Handshake.toConnectionContext()
 
-    assert(result.decodeKey.isNotEmpty())
-    assert(result.encodeKey.isNotEmpty())
+    // ukey2_shell encodes data:
+    var encodedData = cppUkey2Shell.sendEncryptCommand(sPayload1)
+    var decodedData = javaSecureContext.decodeMessageFromPeer(encodedData)
+    assertContentEquals(sPayload1, decodedData)
+
+    // ukey2_shell decodes data:
+    encodedData = javaSecureContext.encodeMessageToPeer(sPayload2)
+    decodedData = cppUkey2Shell.sendDecryptCommand(encodedData)
+    assertContentEquals(sPayload2, decodedData)
+
+    // ukey2_shell session unique:
+    val localSessionUnique = javaSecureContext.sessionUnique
+    val remoteSessionUnique = cppUkey2Shell.sendSessionUniqueCommand()
+    assertContentEquals(localSessionUnique, remoteSessionUnique)
 
     cppUkey2Shell.stopShell()
   }
 
   companion object {
     private const val VERIFICATION_STRING_LENGTH = 32
+    private val sPayload1 = "payload to encrypt1".toByteArray()
+    private val sPayload2 = "payload to encrypt2".toByteArray()
   }
 }
 

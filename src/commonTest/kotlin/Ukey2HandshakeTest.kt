@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.security.cryptauth.lib.securegcm.HandshakeResult
 import com.google.security.cryptauth.lib.securegcm.Ukey2ClientFinished
 import com.google.security.cryptauth.lib.securegcm.Ukey2ClientInit
 import com.google.security.cryptauth.lib.securegcm.Ukey2Handshake
@@ -21,12 +20,17 @@ import com.google.security.cryptauth.lib.securegcm.Ukey2Handshake.HandshakeCiphe
 import com.google.security.cryptauth.lib.securegcm.Ukey2HandshakeCipher
 import com.google.security.cryptauth.lib.securegcm.Ukey2Message
 import com.google.security.cryptauth.lib.securegcm.Ukey2ServerInit
+import d2d.D2DConnectionContext
+import d2d.D2DConnectionContextV1
 import okio.ByteString.Companion.toByteString
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.fail
+
 
 /**
  * Android compatible tests for the [Ukey2Handshake] class.
@@ -75,11 +79,14 @@ class Ukey2HandshakeTest {
     client.verifyHandshake()
     server.verifyHandshake()
 
-    // Get results
-    val clientHandshakeResult = client.handshakeResult
-    val serverHandshakeResult = server.handshakeResult
+    assertEquals(Ukey2Handshake.State.FINISHED, client.getHandshakeState())
+    assertEquals(Ukey2Handshake.State.FINISHED, server.getHandshakeState())
 
-    assertHandshakeResultCompatible(clientHandshakeResult, serverHandshakeResult)
+
+    // Make a context
+    val clientContext = client.toConnectionContext()
+    val serverContext = server.toConnectionContext()
+    assertContextsCompatible(clientContext, serverContext)
 
     assertEquals(Ukey2Handshake.State.ALREADY_USED, client.getHandshakeState())
     assertEquals(Ukey2Handshake.State.ALREADY_USED, server.getHandshakeState())
@@ -685,12 +692,23 @@ class Ukey2HandshakeTest {
     }
   }
 
-  private fun assertHandshakeResultCompatible(client: HandshakeResult, server: HandshakeResult) {
-    assertContentEquals(client.decodeKey, server.encodeKey)
-    assertContentEquals(client.encodeKey, server.decodeKey)
-
-    assertFalse(client.encodeKey.contentEquals(client.decodeKey))
-    assertFalse(server.encodeKey.contentEquals(server.decodeKey))
+  /**
+   * Asserts that the given client and server contexts are compatible
+   */
+  private fun assertContextsCompatible(
+    clientContext: D2DConnectionContext, serverContext: D2DConnectionContext
+  ) {
+    assertNotNull(clientContext)
+    assertNotNull(serverContext)
+    assertEquals(D2DConnectionContextV1.PROTOCOL_VERSION, clientContext.protocolVersion)
+    assertEquals(D2DConnectionContextV1.PROTOCOL_VERSION, serverContext.protocolVersion)
+    assertContentEquals(clientContext.encodeKey, serverContext.decodeKey)
+    assertContentEquals(clientContext.decodeKey, serverContext.encodeKey)
+    assertFalse(clientContext.encodeKey.contentEquals(clientContext.decodeKey))
+    assertEquals(0, clientContext.sequenceNumberForEncoding)
+    assertEquals(0, clientContext.sequenceNumberForDecoding)
+    assertEquals(0, serverContext.sequenceNumberForEncoding)
+    assertEquals(0, serverContext.sequenceNumberForDecoding)
   }
 
   companion object {
