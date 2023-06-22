@@ -1,6 +1,6 @@
 plugins {
   kotlin("multiplatform") version "1.8.21"
-  id("com.squareup.wire") version "4.7.0"
+  id("com.squareup.wire") version "4.7.2"
 }
 
 group = "ukey2"
