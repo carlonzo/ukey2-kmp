@@ -248,14 +248,13 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     ourKeyPair = genKeyPair(cipher)
   }
 
-  val nextHandshakeMessage: ByteArray
-    /**
-     * Get the next handshake message suitable for sending on the wire.
-     *
-     * @throws HandshakeException if an unrecoverable error occurs and the connection should be shut
-     * down.
-     */
-    get() {
+  /**
+   * Get the next handshake message suitable for sending on the wire.
+   *
+   * @throws HandshakeException if an unrecoverable error occurs and the connection should be shut
+   * down.
+   */
+  fun getNextHandshakeMessage(): ByteArray {
       when (handshakeState) {
         InternalState.CLIENT_START -> {
           rawMessage1 = makeUkey2Message(CLIENT_INIT, makeClientInitMessage())
@@ -621,7 +620,9 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     if (message.message_type == ALERT) {
       handshakeState = InternalState.HANDSHAKE_ERROR
       throwHandshakeMessageFromAlertMessage(message)
+      throw IllegalStateException("unreachable")
     }
+
     if (message.message_type != SERVER_INIT) {
       throwAlertException(
         Ukey2Alert.AlertType.BAD_MESSAGE_TYPE,
@@ -726,13 +727,15 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
 
     // Verify that message_type == Type.CLIENT_FINISH; terminate connection if mismatch occurs
     if (message.message_type == null) {
-      throw HandshakeException("Expected, but did not find message type")
+      throw HandshakeException("Expected, but did not find message type $message")
     }
     if (message.message_type == ALERT) {
       throwHandshakeMessageFromAlertMessage(message)
+      throw IllegalStateException("unreachable")
     }
     if (message.message_type != CLIENT_FINISH) {
       throwHandshakeException("Expected, but did not find CLIENT_FINISH message type")
+      throw IllegalStateException("unreachable")
     }
 
     // Verify that the hash of the ClientFinished matches the expected commitment from ClientInit.
@@ -1006,7 +1009,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
 
     // Random nonce is fixed at 32 bytes (as per go/ukey2).
     private val NONCE_LENGTH_IN_BYTES = 32
-    private val UTF_8 = "UTF-8"
 
     // Currently, we only support one next protocol.
     private const val NEXT_PROTOCOL = "AES_256_CBC-HMAC_SHA256"

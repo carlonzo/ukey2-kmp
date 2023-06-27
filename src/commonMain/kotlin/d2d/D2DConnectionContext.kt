@@ -41,13 +41,14 @@ abstract class D2DConnectionContext protected constructor(
     incrementSequenceNumberForEncoding()
 
     val message = createDeviceToDeviceMessage(
-      payload, sequenceNumberForEncoding
+      message = payload,
+      sequenceNumber = sequenceNumberForEncoding
     )
 
     return D2DCryptoOps.signcryptPayload(
       Payload(
-        PayloadType.DEVICE_TO_DEVICE_MESSAGE,
-        message.encode()
+        payloadType = PayloadType.DEVICE_TO_DEVICE_MESSAGE,
+        message = message.encode()
       ),
       encodeKey,
       encodeKey
@@ -87,7 +88,7 @@ abstract class D2DConnectionContext protected constructor(
       throw IllegalStateException("Incorrect sequence number")
     }
 
-    return messageProto.message?.toByteArray() ?: ByteArray(0)
+    return messageProto.message?.toByteArray()!!
   }
 
   /**

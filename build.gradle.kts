@@ -1,9 +1,12 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
 plugins {
   kotlin("multiplatform") version "1.8.21"
   id("com.squareup.wire") version "4.7.0"
+  id("com.vanniktech.maven.publish") version "0.25.2"
 }
 
-group = "ukey2"
+group = "com.carlom"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -11,7 +14,10 @@ repositories {
   mavenLocal()
 }
 
+@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
+  targetHierarchy.default()
+
   jvm {
     jvmToolchain(11)
     withJava()
@@ -19,14 +25,10 @@ kotlin {
       useJUnitPlatform()
     }
   }
-  val hostOs = System.getProperty("os.name")
-  val isMingwX64 = hostOs.startsWith("Windows")
-  val nativeTarget = when {
-    hostOs == "Mac OS X" -> macosArm64("native")
-    hostOs == "Linux" -> linuxX64("native")
-    isMingwX64 -> mingwX64("native")
-    else -> throw GradleException("Host OS is not supported in Kotlin/Native.")
-  }
+
+  iosArm64()
+  iosSimulatorArm64()
+  macosArm64()
 
 
   sourceSets {
