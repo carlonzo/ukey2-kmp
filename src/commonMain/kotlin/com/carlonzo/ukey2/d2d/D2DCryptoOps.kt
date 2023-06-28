@@ -1,4 +1,4 @@
-package d2d
+package com.carlonzo.ukey2.d2d
 
 import com.carterharrison.ecdsa.hash.EcSha256
 import com.google.security.cryptauth.lib.securegcm.GcmMetadata
@@ -7,16 +7,15 @@ import com.google.security.cryptauth.lib.securemessage.Header
 import com.google.security.cryptauth.lib.securemessage.HeaderAndBody
 import com.google.security.cryptauth.lib.securemessage.HeaderAndBodyInternal
 import com.google.security.cryptauth.lib.securemessage.SecureMessage
-import com.google.security.cryptauth.lib.securemessage.SecureMessageBuilder
 import com.google.security.cryptauth.lib.securemessage.SigScheme
 import diglol.crypto.AesCbc
 import diglol.crypto.Cipher
-import hkdf
+import com.carlonzo.ukey2.hkdf
 import kotlinx.coroutines.runBlocking
 import okio.Buffer
 import okio.ByteString.Companion.toByteString
 
-object D2DCryptoOps {
+internal object D2DCryptoOps {
 
   internal val d2dSalt = EcSha256.hash("D2D".encodeToByteArray())
   private val derivationSalt = EcSha256.hash("SecureMessage".encodeToByteArray())
@@ -80,7 +79,7 @@ object D2DCryptoOps {
    * the [SecureMessage] (in the DecryptionKeyId).
    */
   fun signcryptPayload(
-    payload: Payload, decryptKey: ByteArray, responderHello: ByteArray? = null
+      payload: Payload, decryptKey: ByteArray, responderHello: ByteArray? = null
   ): ByteArray {
 
     val secureMessageBuilder: SecureMessageBuilder = SecureMessageBuilder()
@@ -96,9 +95,9 @@ object D2DCryptoOps {
     }
     return secureMessageBuilder.buildSignCryptedMessage(
       decryptKey,
-      SigType.HMAC_SHA256,
+        SigType.HMAC_SHA256,
       decryptKey,
-      EncType.AES_256_CBC,
+        EncType.AES_256_CBC,
       payload.message
     ).encode()
 
@@ -206,11 +205,11 @@ object D2DCryptoOps {
    * @see SecureMessageBuilder.buildSignCryptedMessage
    */
   private fun parseSignCryptedMessage(
-    secmsg: SecureMessage,
-    verificationKey: ByteArray,
-    sigType: SigType,
-    decryptionKey: ByteArray,
-    encType: EncType
+      secmsg: SecureMessage,
+      verificationKey: ByteArray,
+      sigType: SigType,
+      decryptionKey: ByteArray,
+      encType: EncType
   ): HeaderAndBody {
 
     if (encType === EncType.NONE) {
@@ -266,10 +265,10 @@ object D2DCryptoOps {
   }
 
   private fun verifyHeaderAndBody(
-    secmsg: SecureMessage,
-    verificationKey: ByteArray,
-    sigType: SigType,
-    encType: EncType,
+      secmsg: SecureMessage,
+      verificationKey: ByteArray,
+      sigType: SigType,
+      encType: EncType,
   ): HeaderAndBody {
 
     val signature = secmsg.signature.toByteArray()

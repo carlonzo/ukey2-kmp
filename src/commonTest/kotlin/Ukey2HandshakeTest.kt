@@ -12,22 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import com.carlonzo.ukey2.Ukey2Handshake
+import com.carlonzo.ukey2.Ukey2Handshake.AlertException
+import com.carlonzo.ukey2.Ukey2Handshake.HandshakeCipher
+import com.carlonzo.ukey2.d2d.D2DConnectionContext
+import com.carlonzo.ukey2.d2d.D2DConnectionContextV1
 import com.google.security.cryptauth.lib.securegcm.Ukey2ClientFinished
 import com.google.security.cryptauth.lib.securegcm.Ukey2ClientInit
-import com.google.security.cryptauth.lib.securegcm.Ukey2Handshake
-import com.google.security.cryptauth.lib.securegcm.Ukey2Handshake.AlertException
-import com.google.security.cryptauth.lib.securegcm.Ukey2Handshake.HandshakeCipher
 import com.google.security.cryptauth.lib.securegcm.Ukey2HandshakeCipher
 import com.google.security.cryptauth.lib.securegcm.Ukey2Message
 import com.google.security.cryptauth.lib.securegcm.Ukey2ServerInit
-import d2d.D2DConnectionContext
-import d2d.D2DConnectionContextV1
 import okio.ByteString.Companion.toByteString
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.fail
 
@@ -51,19 +50,19 @@ class Ukey2HandshakeTest {
     assertEquals(Ukey2Handshake.State.IN_PROGRESS, server.getHandshakeState())
 
     // Message 1 (Client Init)
-    var handshakeMessage: ByteArray = client.nextHandshakeMessage
+    var handshakeMessage: ByteArray = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
     assertEquals(Ukey2Handshake.State.IN_PROGRESS, client.getHandshakeState())
     assertEquals(Ukey2Handshake.State.IN_PROGRESS, server.getHandshakeState())
 
     // Message 2 (Server Init)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     client.parseHandshakeMessage(handshakeMessage)
     assertEquals(Ukey2Handshake.State.IN_PROGRESS, client.getHandshakeState())
     assertEquals(Ukey2Handshake.State.IN_PROGRESS, server.getHandshakeState())
 
     // Message 3 (Client Finish)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
     assertEquals(Ukey2Handshake.State.VERIFICATION_NEEDED, client.getHandshakeState())
     assertEquals(Ukey2Handshake.State.VERIFICATION_NEEDED, server.getHandshakeState())
@@ -117,9 +116,9 @@ class Ukey2HandshakeTest {
     // Client sends ClientInit (again) instead of ClientFinished
     var client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     var server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    server.nextHandshakeMessage // do this to avoid illegal state
+    server.getNextHandshakeMessage() // do this to avoid illegal state
     try {
       server.parseHandshakeMessage(handshakeMessage)
       fail("Expected Alert for client sending ClientInit twice")
@@ -131,7 +130,7 @@ class Ukey2HandshakeTest {
     // Server sends ClientInit back to client instead of ServerInit
     client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     try {
       client.parseHandshakeMessage(handshakeMessage)
       fail("Expected Alert for server sending ClientInit back to client")
@@ -143,9 +142,9 @@ class Ukey2HandshakeTest {
     // Clients sends ServerInit back to client instead of ClientFinished
     client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     try {
       server.parseHandshakeMessage(handshakeMessage)
       fail("Expected Alert for client sending ServerInit back to server")
@@ -164,11 +163,11 @@ class Ukey2HandshakeTest {
     // Client 1 and Server 1
     val client1 = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     val server1 = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client1.nextHandshakeMessage
+    var handshakeMessage = client1.getNextHandshakeMessage()
     server1.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server1.nextHandshakeMessage
+    handshakeMessage = server1.getNextHandshakeMessage()
     client1.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = client1.nextHandshakeMessage
+    handshakeMessage = client1.getNextHandshakeMessage()
     server1.parseHandshakeMessage(handshakeMessage)
     val client1AuthString = client1.getVerificationString(MAX_AUTH_STRING_LENGTH)
     val server1AuthString = server1.getVerificationString(MAX_AUTH_STRING_LENGTH)
@@ -177,11 +176,11 @@ class Ukey2HandshakeTest {
     // Client 2 and Server 2
     val client2 = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     val server2 = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client2.nextHandshakeMessage
+    handshakeMessage = client2.getNextHandshakeMessage()
     server2.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server2.nextHandshakeMessage
+    handshakeMessage = server2.getNextHandshakeMessage()
     client2.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = client2.nextHandshakeMessage
+    handshakeMessage = client2.getNextHandshakeMessage()
     server2.parseHandshakeMessage(handshakeMessage)
     val client2AuthString = client2.getVerificationString(MAX_AUTH_STRING_LENGTH)
     val server2AuthString = server2.getVerificationString(MAX_AUTH_STRING_LENGTH)
@@ -201,18 +200,18 @@ class Ukey2HandshakeTest {
     // Run handshake as usual, but stop before sending client finished
     val client1 = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     val server1 = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client1.nextHandshakeMessage
+    var handshakeMessage = client1.getNextHandshakeMessage()
     server1.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server1.nextHandshakeMessage
+    handshakeMessage = server1.getNextHandshakeMessage()
 
     // Run another handshake and get the final client finished
     val client2 = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     val server2 = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client2.nextHandshakeMessage
+    handshakeMessage = client2.getNextHandshakeMessage()
     server2.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server2.nextHandshakeMessage
+    handshakeMessage = server2.getNextHandshakeMessage()
     client2.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = client2.nextHandshakeMessage
+    handshakeMessage = client2.getNextHandshakeMessage()
 
     // Now use the client finished from second handshake in first handshake (simulates where an
     // attacker switches out the last message).
@@ -247,7 +246,7 @@ class Ukey2HandshakeTest {
     // Get ClientInit and modify the version to be too big
     var client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     var server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     var message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
     var clientInit = Ukey2ClientInit.ADAPTER.decode(message.message_data!!)
@@ -265,7 +264,7 @@ class Ukey2HandshakeTest {
     // Get ClientInit and modify the version to be too small
     client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
     clientInit = Ukey2ClientInit.ADAPTER.decode(message.message_data!!)
@@ -289,7 +288,7 @@ class Ukey2HandshakeTest {
     // Get ClientInit and modify the nonce
     val client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     val server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     var message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
     val clientInit =
@@ -317,7 +316,7 @@ class Ukey2HandshakeTest {
     // Get ClientInit and modify the commitment
     val client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     val server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     var message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
     val clientInit = Ukey2ClientInit.ADAPTER.decode(message.message_data!!)
@@ -347,9 +346,9 @@ class Ukey2HandshakeTest {
     // Get ClientInit and modify the version to be too big
     var client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     var server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
 
     var message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
@@ -368,9 +367,9 @@ class Ukey2HandshakeTest {
     // Get ClientInit and modify the version to be too small
     client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
 
     message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
@@ -396,9 +395,9 @@ class Ukey2HandshakeTest {
     // Get ServerInit and modify the nonce
     val client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     val server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     var message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
     val serverInit = Ukey2ServerInit.ADAPTER.decode(message.message_data!!).let {
@@ -427,9 +426,9 @@ class Ukey2HandshakeTest {
     // Get ServerInit
     var client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     var server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     var message = Ukey2Message.ADAPTER.decode(handshakeMessage)
     var serverInit = Ukey2ServerInit.ADAPTER.decode(message.message_data!!)
 
@@ -452,9 +451,9 @@ class Ukey2HandshakeTest {
     // Get ServerInit
     client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     message = Ukey2Message.ADAPTER.decode(handshakeMessage)
     serverInit = Ukey2ServerInit.ADAPTER.decode(message.message_data!!)
 
@@ -485,9 +484,9 @@ class Ukey2HandshakeTest {
     // Get ServerInit
     var client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     var server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     var message = Ukey2Message.ADAPTER.decode(handshakeMessage)
     var serverInit: Ukey2ServerInit = Ukey2ServerInit.ADAPTER.decode(message.message_data!!)
 
@@ -510,9 +509,9 @@ class Ukey2HandshakeTest {
     // Get ServerInit
     client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     message = Ukey2Message.ADAPTER.decode(handshakeMessage)
     serverInit = Ukey2ServerInit.ADAPTER.decode(message.message_data!!)
 
@@ -542,11 +541,11 @@ class Ukey2HandshakeTest {
     // Get ClientFinished
     var client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     var server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     client.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     var message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
     // remove public key
@@ -565,11 +564,11 @@ class Ukey2HandshakeTest {
     // Get ClientFinished
     client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     client.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     message = Ukey2Message.ADAPTER.decode(handshakeMessage)
 
     // remove public key
@@ -605,15 +604,15 @@ class Ukey2HandshakeTest {
     for (i in 0 until numberOfRuns) {
       var client: Ukey2Handshake? = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
       var server: Ukey2Handshake? = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-      var handshakeMessage: ByteArray? = client!!.nextHandshakeMessage
+      var handshakeMessage: ByteArray? = client!!.getNextHandshakeMessage()
       var message: Ukey2Message? = Ukey2Message.ADAPTER.decode(handshakeMessage!!)
       val clientInit: Ukey2ClientInit = Ukey2ClientInit.ADAPTER.decode(message?.message_data!!)
       server!!.parseHandshakeMessage(handshakeMessage)
-      handshakeMessage = server.nextHandshakeMessage
+      handshakeMessage = server.getNextHandshakeMessage()
       message = Ukey2Message.ADAPTER.decode(handshakeMessage)
       val serverInit: Ukey2ServerInit = Ukey2ServerInit.ADAPTER.decode(message.message_data!!)
       client.parseHandshakeMessage(handshakeMessage)
-      handshakeMessage = client.nextHandshakeMessage
+      handshakeMessage = client.getNextHandshakeMessage()
       message = Ukey2Message.ADAPTER.decode(handshakeMessage)
       val clientFinished: Ukey2ClientFinished = Ukey2ClientFinished.ADAPTER.decode(message.message_data!!)
 
@@ -668,11 +667,11 @@ class Ukey2HandshakeTest {
     // Run the protocol
     val client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
     val server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
-    var handshakeMessage = client.nextHandshakeMessage
+    var handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = server.nextHandshakeMessage
+    handshakeMessage = server.getNextHandshakeMessage()
     client.parseHandshakeMessage(handshakeMessage)
-    handshakeMessage = client.nextHandshakeMessage
+    handshakeMessage = client.getNextHandshakeMessage()
     server.parseHandshakeMessage(handshakeMessage)
 
     // Try to get too short verification string

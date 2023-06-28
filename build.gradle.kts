@@ -1,3 +1,4 @@
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
@@ -6,7 +7,7 @@ plugins {
   id("com.vanniktech.maven.publish") version "0.25.2"
 }
 
-group = "com.carlom"
+group = "com.carlonzo.ukey2"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -35,7 +36,7 @@ kotlin {
     val commonMain by getting {
       dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-        implementation("com.carterharrison:ecdsa:0.1.0-beta1")
+        implementation("com.carlonzo.ecdsa:ecdsa:0.1.0")
         implementation("org.kotlincrypto:secure-random:0.1.0")
         implementation("com.diglol.crypto:cipher:0.1.4")
       }
@@ -56,5 +57,37 @@ kotlin {
 
 wire {
   kotlin {
+  }
+}
+
+mavenPublishing {
+  publishToMavenCentral(SonatypeHost.S01)
+
+  signAllPublications()
+
+  pom {
+    name.set("ukey2-kmp")
+    description.set("UKey2 port for Kotlin Multiplatform")
+    inceptionYear.set("2023")
+    url.set("https://github.com/carlonzo/ukey2-kmp")
+    developers {
+      developer {
+        id.set("carlonzo")
+        name.set("Carlo Marinangeli")
+        url.set("https://github.com/carlonzo")
+      }
+    }
+    licenses {
+      license {
+        name.set("MIT License")
+        url.set("https://opensource.org/licenses/MIT")
+        distribution.set("repo")
+      }
+    }
+    scm {
+      url.set("https://github.com/carlonzo/ukey2-kmp")
+      connection.set("scm:git:git://github.com/carlonzo/ukey2-kmp.git")
+      developerConnection.set("scm:git:ssh://git@github.com/carlonzo/ukey2-kmp.git")
+    }
   }
 }

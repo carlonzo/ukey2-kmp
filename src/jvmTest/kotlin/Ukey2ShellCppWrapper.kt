@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package com.google.security.cryptauth.lib.securegcm
 
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -48,18 +47,10 @@ class Ukey2ShellCppWrapper(private val mode: Mode, private val verificationStrin
     RESPONDER
   }
 
-  private val executorService: ExecutorService
+  private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 
   private var shellProcess: Process? = null
   private var secureContextEstablished = false
-
-  /**
-   * @param mode The mode to run the shell in (initiator or responder).
-   * @param verificationStringLength The length of the verification string used in the handshake.
-   */
-  init {
-    executorService = Executors.newSingleThreadExecutor()
-  }
 
   /**
    * Begins execution of the ukey2_shell binary.

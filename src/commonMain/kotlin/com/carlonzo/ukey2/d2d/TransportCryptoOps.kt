@@ -1,11 +1,11 @@
-package d2d
+package com.carlonzo.ukey2.d2d
 
 import com.google.security.cryptauth.lib.securegcm.Type
 
 /**
  * A type safe version of the [SecureGcmProto] `Type` codes.
  */
-enum class PayloadType(val type: Type) {
+internal enum class PayloadType(val type: Type) {
   ENROLLMENT(Type.ENROLLMENT),
   TICKLE(Type.TICKLE),
   TX_REQUEST(Type.TX_REQUEST),
@@ -43,7 +43,7 @@ enum class PayloadType(val type: Type) {
 /**
  * Encapsulates a [PayloadType] specifier, and a corresponding raw `message` payload.
  */
-data class Payload(val payloadType: PayloadType, val message: ByteArray) {
+internal data class Payload(val payloadType: PayloadType, val message: ByteArray) {
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

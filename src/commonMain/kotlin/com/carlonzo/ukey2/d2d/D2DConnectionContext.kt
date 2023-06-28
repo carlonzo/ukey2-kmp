@@ -1,4 +1,4 @@
-package d2d
+package com.carlonzo.ukey2.d2d
 
 // Copyright 2020 Google LLC
 //

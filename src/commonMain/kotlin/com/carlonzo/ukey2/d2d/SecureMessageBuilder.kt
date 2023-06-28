@@ -11,9 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package com.google.security.cryptauth.lib.securemessage
+package com.carlonzo.ukey2.d2d
 
-import d2d.D2DCryptoOps
+import com.google.security.cryptauth.lib.securemessage.Header
+import com.google.security.cryptauth.lib.securemessage.HeaderAndBodyInternal
+import com.google.security.cryptauth.lib.securemessage.SecureMessage
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.kotlincrypto.SecureRandom
@@ -25,7 +27,7 @@ import org.kotlincrypto.SecureRandom
  *
  * @see SecureMessageParser
  */
-class SecureMessageBuilder {
+internal class SecureMessageBuilder {
   private var publicMetadata: ByteString? = null
   private var verificationKeyId: ByteString? = null
   private var decryptionKeyId: ByteString? = null

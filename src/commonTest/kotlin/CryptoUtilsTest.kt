@@ -1,9 +1,8 @@
+import com.carlonzo.ukey2.hkdf
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 
 class CryptoUtilsTest {
-
-
   @Test
   fun testHkdf() {
     val input = "e61f1b1746614767abd1c93bbbfddda3b5f81d73c7f33376a32ca66f604ae01f".decodeHex()

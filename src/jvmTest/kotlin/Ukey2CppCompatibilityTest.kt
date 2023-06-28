@@ -14,9 +14,10 @@ package com.google.security.cryptauth.lib.securegcm
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.security.cryptauth.lib.securegcm.Ukey2Handshake.HandshakeCipher
+import Ukey2ShellCppWrapper
+import com.carlonzo.ukey2.Ukey2Handshake
+import com.carlonzo.ukey2.Ukey2Handshake.HandshakeCipher
 import org.junit.jupiter.api.Assertions.assertTrue
-import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 
@@ -43,7 +44,7 @@ class Ukey2CppCompatibilityTest {
     javaUkey2Handshake.parseHandshakeMessage(clientInit)
 
     // ServerInit:
-    val serverInit = javaUkey2Handshake.nextHandshakeMessage
+    val serverInit = javaUkey2Handshake.getNextHandshakeMessage()
     cppUkey2Shell.writeHandshakeMessage(serverInit)
 
     // ClientFinished:
@@ -89,7 +90,7 @@ class Ukey2CppCompatibilityTest {
     val javaUkey2Handshake = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
 
     // ClientInit:
-    val clientInit = javaUkey2Handshake.nextHandshakeMessage
+    val clientInit = javaUkey2Handshake.getNextHandshakeMessage()
     cppUkey2Shell.writeHandshakeMessage(clientInit)
 
     // ServerInit:
@@ -97,7 +98,7 @@ class Ukey2CppCompatibilityTest {
     javaUkey2Handshake.parseHandshakeMessage(serverInit)
 
     // ClientFinished:
-    val clientFinished = javaUkey2Handshake.nextHandshakeMessage
+    val clientFinished = javaUkey2Handshake.getNextHandshakeMessage()
     cppUkey2Shell.writeHandshakeMessage(clientFinished)
 
     // Verification String:

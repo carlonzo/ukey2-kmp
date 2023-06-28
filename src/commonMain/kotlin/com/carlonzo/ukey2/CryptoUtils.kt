@@ -1,8 +1,9 @@
+package com.carlonzo.ukey2
+
 import okio.Buffer
 import okio.ByteString
 
-
-fun hkdf(inputKeyMaterial: ByteArray, salt: ByteArray, info: ByteArray, length: Int = 32): ByteArray {
+internal fun hkdf(inputKeyMaterial: ByteArray, salt: ByteArray, info: ByteArray, length: Int = 32): ByteArray {
 
   if (length < 0) {
     throw IllegalArgumentException("Length must be positive")
