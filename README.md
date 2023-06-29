@@ -3,6 +3,29 @@ This is a port of [google/ukey2](https://github.com/google/ukey2) library to sup
 
 Handshake and Device to Device communication is ported and tested against the C++ test from the original library
 
+## Integration
+
+You can add the dependency to your project by adding the following lines to your Gradle build file.
+
+The library is available on Maven Central and you can add the coordinates to your commonMain source set.
+
+### Gradle
+```kotlin
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("com.carlonzo.ukey2:ukey2-kmp:<latest version>")
+}
+```
+
+### Supported platforms
+The project currently supports the following platforms:
+* JVM
+* iOS (iosArm64, iosSimulatorArm64)
+* macosArm64
+
 ## Usage
 To create a new handshake session, use the following code:
 
