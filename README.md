@@ -83,3 +83,19 @@ To create a new handshake session, use the following code:
   // Retrieve the connection context used to encrypt messages between client and server
   val connection = server.toConnectionContext()
 ```
+
+## Development
+
+### Testing
+To run the tests against the official C++ implementation, you will need to build the C++ library using the Bazel command from the ukey2 root:
+```bash
+  bazel build //src/main/cpp:ukey2_shell
+```
+
+and change the path of the binary wrapper pointed by `BINARY_PATH` in `src/jvmTest/kotlin/Ukey2ShellCppWrapper.kt` to the correct path of the `ukey2_shell` binary.
+It should be `<ukey2folder>/bazel-bin/src/main/cpp/ukey2_shell`
+
+Then you can run the tests using the following command:
+```bash
+  ./gradlew test
+```

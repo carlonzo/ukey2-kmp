@@ -304,8 +304,7 @@ class Ukey2ShellCppWrapper(private val mode: Mode, private val verificationStrin
 
   companion object {
     // The path the the ukey2_shell binary.
-//    private const val BINARY_PATH = "build/src/main/cpp/src/securegcm/ukey2_shell"
-    private const val BINARY_PATH = "/Users/carlomarinangeli/Projects/ukey2/bazel-bin/src/main/cpp/ukey2_shell"
+    private const val BINARY_PATH = "<ukey2folder>/bazel-bin/src/main/cpp/ukey2_shell"
 
     // The time to wait before timing out a read or write operation to the shell.
     // TODO(b/147378611): store a java.time.Duration instead
