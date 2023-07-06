@@ -2,7 +2,7 @@ import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
-  kotlin("multiplatform") version "1.8.21"
+  kotlin("multiplatform") version "1.9.0"
   id("com.squareup.wire") version "4.7.0"
   id("com.vanniktech.maven.publish") version "0.25.2"
 }
