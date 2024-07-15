@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
   kotlin("multiplatform") version "1.8.21"
-  id("com.squareup.wire") version "4.9.6"
+  id("com.squareup.wire") version "5.0.0"
   id("com.vanniktech.maven.publish") version "0.25.3"
 }
 
