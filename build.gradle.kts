@@ -37,7 +37,7 @@ kotlin {
       dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
         implementation("com.carlonzo.ecdsa:ecdsa:0.1.0")
-        implementation("org.kotlincrypto:secure-random:0.1.0")
+        implementation("org.kotlincrypto:secure-random:0.3.2")
         implementation("com.diglol.crypto:cipher:0.1.4")
       }
     }
