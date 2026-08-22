@@ -2,7 +2,6 @@ package com.carlonzo.ukey2.d2d
 
 import com.carterharrison.ecdsa.hash.EcSha256
 import okio.Buffer
-import okio.IOException
 
 // Copyright 2020 Google LLC
 //
@@ -67,29 +66,14 @@ class D2DConnectionContextV1 internal constructor(
    * | Protocol Version |   encode seq number  |   decode seq number  | encode key | decode key |
    * +------------------------------------------------------------------------------------------+
    */
-  override fun saveSession(): ByteArray? {
-    val bytes = Buffer()
-    try {
-      // Protocol version
-      bytes.writeInt(1)
-
-      // Encode sequence number
-      bytes.write(signedIntToBytes(sequenceNumberForEncoding))
-
-      // Decode sequence number
-      bytes.write(signedIntToBytes(sequenceNumberForDecoding))
-
-      // Encode Key
-      bytes.write(encodeKey)
-
-      // Decode Key
-      bytes.write(decodeKey)
-    } catch (e: IOException) {
-      // should not happen
-      e.printStackTrace()
-      return null
-    }
-    return bytes.readByteArray()
+  override fun saveSession(): ByteArray {
+    return Buffer()
+      .writeInt(1)
+      .writeInt(sequenceNumberForEncoding)
+      .writeInt(sequenceNumberForDecoding)
+      .write(encodeKey)
+      .write(decodeKey)
+      .readByteArray()
   }
 
   companion object {

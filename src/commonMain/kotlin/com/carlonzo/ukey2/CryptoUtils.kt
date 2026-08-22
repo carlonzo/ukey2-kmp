@@ -44,3 +44,22 @@ private fun hkdfSha256Expand(pseudoRandomKey: ByteArray, info: ByteArray, length
 private fun hkdfSha256Extract(inputKeyMaterial: ByteArray, salt: ByteArray): ByteArray {
   return Buffer().write(inputKeyMaterial).hmacSha256(ByteString.of(*salt)).toByteArray()
 }
+
+/** MessageDigest.isEqual-style comparison that does not short-circuit on the first mismatch. */
+internal fun constantTimeEquals(a: ByteArray?, b: ByteArray?): Boolean {
+  if (a == null || b == null) {
+    return false
+  }
+  val lenA = a.size
+  val lenB = b.size
+  if (lenB == 0) {
+    return lenA == 0
+  }
+  var result = 0
+  result = result or (lenA - lenB)
+  for (i in 0 until lenA) {
+    val indexB = (i - lenB ushr 31) * i
+    result = result or (a[i].toInt() xor b[indexB].toInt())
+  }
+  return result == 0
+}

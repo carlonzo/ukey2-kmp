@@ -14,6 +14,7 @@ package com.carlonzo.ukey2.d2d
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import com.google.security.cryptauth.lib.securegcm.DeviceToDeviceMessage
+import okio.Buffer
 import okio.ByteString.Companion.toByteString
 
 
@@ -155,24 +156,9 @@ abstract class D2DConnectionContext protected constructor(
       }
 
       when (val protocolVersion = savedSessionInfo[0].toInt() and 0xff) {
-//        0 -> {
-//          // Version 0 has a 1 byte protocol version, a 4 byte sequence number,
-//          // and 32 bytes of AES key (1 + 4 + 32 = 37)
-//          if (savedSessionInfo.size != 37) {
-//            throw IllegalArgumentException(
-//              "Incorrect data length (" + savedSessionInfo.size + ") for v0 protocol"
-//            )
-//          }
-//          val sequenceNumber = bytesToSignedInt(savedSessionInfo.copyOfRange(1,5))
-//          val sharedKey: javax.crypto.SecretKey = javax.crypto.spec.SecretKeySpec(java.util.Arrays.copyOfRange(savedSessionInfo, 5, 37), "AES")
-//          return D2DConnectionContextV0(sharedKey, sequenceNumber)
-//        }
-
         1 -> {
           // Version 1 has a 1 byte protocol version, two 4 byte sequence numbers,
           // and two 32 byte AES keys (1 + 4 + 4 + 32 + 32 = 73)
-
-          // TODO save verification key?
           if (savedSessionInfo.size != 73) {
             throw IllegalArgumentException("Incorrect data length for v1 protocol")
           }
@@ -188,37 +174,14 @@ abstract class D2DConnectionContext protected constructor(
         }
 
         else -> throw IllegalArgumentException(
-          ("Cannot rebuild context, unkown protocol version: $protocolVersion")
+          "Cannot rebuild context, unkown protocol version: $protocolVersion"
         )
       }
     }
 
-    /**
-     * Convert 4 bytes in big-endian representation into a signed int.
-     */
     private fun bytesToSignedInt(bytes: ByteArray): Int {
-      if (bytes.size != 4) {
-        throw IllegalArgumentException(
-          ("Expected 4 bytes to encode int, but got: "
-              + bytes.size + " bytes")
-        )
-      }
-      return (((bytes[0].toInt() shl 24) and -0x1000000)
-          or ((bytes[1].toInt() shl 16) and 0x00ff0000)
-          or ((bytes[2].toInt() shl 8) and 0x0000ff00)
-          or (bytes[3].toInt() and 0x000000ff))
-    }
-
-    /**
-     * Convert a signed int into a 4 byte big-endian representation
-     */
-    internal fun signedIntToBytes(`val`: Int): ByteArray {
-      val bytes = ByteArray(4)
-      bytes[0] = ((`val` shr 24) and 0xff).toByte()
-      bytes[1] = ((`val` shr 16) and 0xff).toByte()
-      bytes[2] = ((`val` shr 8) and 0xff).toByte()
-      bytes[3] = (`val` and 0xff).toByte()
-      return bytes
+      require(bytes.size == 4) { "Expected 4 bytes to encode int, but got: ${bytes.size} bytes" }
+      return Buffer().write(bytes).readInt()
     }
   }
 }

@@ -2,47 +2,19 @@ package com.carlonzo.ukey2.d2d
 
 import com.google.security.cryptauth.lib.securegcm.Type
 
-/**
- * A type safe version of the [SecureGcmProto] `Type` codes.
- */
 internal enum class PayloadType(val type: Type) {
-  ENROLLMENT(Type.ENROLLMENT),
-  TICKLE(Type.TICKLE),
-  TX_REQUEST(Type.TX_REQUEST),
-  TX_REPLY(Type.TX_REPLY),
-  TX_SYNC_REQUEST(Type.TX_SYNC_REQUEST),
-  TX_SYNC_RESPONSE(Type.TX_SYNC_RESPONSE),
-  TX_PING(Type.TX_PING),
-  DEVICE_INFO_UPDATE(Type.DEVICE_INFO_UPDATE),
-  TX_CANCEL_REQUEST(Type.TX_CANCEL_REQUEST),
-  LOGIN_NOTIFICATION(Type.LOGIN_NOTIFICATION),
-  PROXIMITYAUTH_PAIRING(Type.PROXIMITYAUTH_PAIRING),
-  GCMV1_IDENTITY_ASSERTION(Type.GCMV1_IDENTITY_ASSERTION),
-  DEVICE_TO_DEVICE_RESPONDER_HELLO_PAYLOAD(Type.DEVICE_TO_DEVICE_RESPONDER_HELLO_PAYLOAD),
-  DEVICE_TO_DEVICE_MESSAGE(Type.DEVICE_TO_DEVICE_MESSAGE),
-  DEVICE_PROXIMITY_CALLBACK(Type.DEVICE_PROXIMITY_CALLBACK),
-  UNLOCK_KEY_SIGNED_CHALLENGE(Type.UNLOCK_KEY_SIGNED_CHALLENGE);
-
+  DEVICE_TO_DEVICE_MESSAGE(Type.DEVICE_TO_DEVICE_MESSAGE);
 
   companion object {
-    fun valueOf(type: Type): PayloadType {
-      return valueOf(type.value)
-    }
-
-    fun valueOf(type: Int): PayloadType {
-      for (payloadType in values()) {
-        if (payloadType.type.value == type) {
-          return payloadType
-        }
+    fun valueOf(type: Type?): PayloadType {
+      if (type != Type.DEVICE_TO_DEVICE_MESSAGE) {
+        throw IllegalArgumentException("Unsupported payload type: $type")
       }
-      throw IllegalArgumentException("Unsupported payload type: $type")
+      return DEVICE_TO_DEVICE_MESSAGE
     }
   }
 }
 
-/**
- * Encapsulates a [PayloadType] specifier, and a corresponding raw `message` payload.
- */
 internal data class Payload(val payloadType: PayloadType, val message: ByteArray) {
 
   override fun equals(other: Any?): Boolean {
