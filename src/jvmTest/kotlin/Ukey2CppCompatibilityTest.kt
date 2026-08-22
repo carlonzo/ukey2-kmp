@@ -14,12 +14,12 @@ package com.google.security.cryptauth.lib.securegcm
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Ukey2ShellCppWrapper
 import com.carlonzo.ukey2.Ukey2Handshake
 import com.carlonzo.ukey2.Ukey2Handshake.HandshakeCipher
-import org.junit.jupiter.api.Assertions.assertTrue
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
+import kotlin.test.assertTrue
 
 
 /**
@@ -35,6 +35,7 @@ class Ukey2CppCompatibilityTest {
   /** Tests full handshake with C++ client and Java server.  */
   @Test
   fun testCppClientJavaServer() {
+    if (!cppShellAvailable()) return
     val cppUkey2Shell = Ukey2ShellCppWrapper(Ukey2ShellCppWrapper.Mode.INITIATOR, VERIFICATION_STRING_LENGTH)
     cppUkey2Shell.startShell()
     val javaUkey2Handshake = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
@@ -85,6 +86,7 @@ class Ukey2CppCompatibilityTest {
   /** Tests full handshake with C++ server and Java client.  */
   @Test
   fun testCppServerJavaClient() {
+    if (!cppShellAvailable()) return
     val cppUkey2Shell = Ukey2ShellCppWrapper(Ukey2ShellCppWrapper.Mode.RESPONDER, VERIFICATION_STRING_LENGTH)
     cppUkey2Shell.startShell()
     val javaUkey2Handshake = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
@@ -132,6 +134,9 @@ class Ukey2CppCompatibilityTest {
     private const val VERIFICATION_STRING_LENGTH = 32
     private val sPayload1 = "payload to encrypt1".toByteArray()
     private val sPayload2 = "payload to encrypt2".toByteArray()
+
+    private fun cppShellAvailable(): Boolean =
+      File(Ukey2ShellCppWrapper.BINARY_PATH).canExecute()
   }
 }
 

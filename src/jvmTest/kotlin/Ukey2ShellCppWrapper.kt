@@ -1,3 +1,5 @@
+package com.google.security.cryptauth.lib.securegcm
+
 // Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -304,7 +306,7 @@ class Ukey2ShellCppWrapper(private val mode: Mode, private val verificationStrin
 
   companion object {
     // The path the the ukey2_shell binary.
-    private const val BINARY_PATH = "<ukey2folder>/bazel-bin/src/main/cpp/ukey2_shell"
+    const val BINARY_PATH = "<ukey2folder>/bazel-bin/src/main/cpp/ukey2_shell"
 
     // The time to wait before timing out a read or write operation to the shell.
     // TODO(b/147378611): store a java.time.Duration instead

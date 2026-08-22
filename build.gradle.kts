@@ -1,57 +1,30 @@
-import com.vanniktech.maven.publish.SonatypeHost
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-
 plugins {
-  kotlin("multiplatform") version "1.8.21"
-  id("com.squareup.wire") version "4.9.6"
-  id("com.vanniktech.maven.publish") version "0.25.3"
+  kotlin("multiplatform") version "2.4.10"
+  id("com.squareup.wire") version "6.4.6"
+  id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 group = "com.carlonzo.ukey2"
 version = "1.0"
 
-repositories {
-  mavenCentral()
-  mavenLocal()
-}
-
-@OptIn(ExperimentalKotlinGradlePluginApi::class)
 kotlin {
-  targetHierarchy.default()
-
-  jvm {
-    jvmToolchain(11)
-    withJava()
-    testRuns["test"].executionTask.configure {
-      useJUnitPlatform()
-    }
-  }
+  jvmToolchain(11)
+  jvm()
 
   iosArm64()
   iosSimulatorArm64()
   macosArm64()
 
-
   sourceSets {
-    val commonMain by getting {
-      dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
-        implementation("com.carlonzo.ecdsa:ecdsa:0.1.0")
-        implementation("org.kotlincrypto:secure-random:0.1.0")
-        implementation("com.diglol.crypto:cipher:0.1.4")
-      }
+    commonMain.dependencies {
+      implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+      implementation("com.carlonzo.ecdsa:ecdsa:0.1.0")
+      implementation("org.kotlincrypto.random:crypto-rand:0.6.0")
+      implementation("com.diglol.crypto:cipher:0.2.0")
     }
-
-
-    val commonTest by getting {
-      dependencies {
-        implementation(kotlin("test"))
-      }
+    commonTest.dependencies {
+      implementation(kotlin("test"))
     }
-    val jvmMain by getting
-    val jvmTest by getting
-    val nativeMain by getting
-    val nativeTest by getting
   }
 }
 
@@ -61,8 +34,7 @@ wire {
 }
 
 mavenPublishing {
-  publishToMavenCentral(SonatypeHost.S01)
-
+  publishToMavenCentral()
   signAllPublications()
 
   pom {

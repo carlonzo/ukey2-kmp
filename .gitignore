@@ -85,3 +85,4 @@ gradle-app.setting
 *.hprof
 
 .DS_Store
+.kotlin/

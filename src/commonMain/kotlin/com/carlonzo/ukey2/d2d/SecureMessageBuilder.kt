@@ -18,7 +18,7 @@ import com.google.security.cryptauth.lib.securemessage.HeaderAndBodyInternal
 import com.google.security.cryptauth.lib.securemessage.SecureMessage
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
-import org.kotlincrypto.SecureRandom
+import org.kotlincrypto.random.CryptoRand
 
 /**
  * Builder for [SecureMessage] protos. Can be used to create either signed messages,
@@ -36,7 +36,6 @@ internal class SecureMessageBuilder {
    * This data is never sent inside the protobufs, so the builder just saves it as a byte[].
    */
   private var associatedData: ByteArray? = null
-  private var rng: SecureRandom = SecureRandom()
 
   /**
    * Resets this [SecureMessageBuilder] instance to a blank configuration (and returns it).
@@ -174,7 +173,7 @@ internal class SecureMessageBuilder {
       throw IllegalStateException("Must set a verificationKeyId when using public key signature with encryption")
     }
 
-    val iv = rng.nextBytesOf(encType.blockSize)
+    val iv = CryptoRand.Default.nextBytes(ByteArray(encType.blockSize))
     val header: ByteArray = buildHeader(sigType, encType, iv).encode()
 
     // We may or may not need an extra tag in front of the plaintext body
