@@ -11,8 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-@file:OptIn(ExperimentalUnsignedTypes::class)
-
 package com.carlonzo.ukey2
 
 import com.carlonzo.ukey2.d2d.D2DConnectionContext
@@ -35,7 +33,7 @@ import com.google.security.cryptauth.lib.securemessage.EcP256PublicKey
 import com.google.security.cryptauth.lib.securemessage.GenericPublicKey
 import com.google.security.cryptauth.lib.securemessage.PublicKeyType
 import okio.ByteString.Companion.toByteString
-import org.kotlincrypto.SecureRandom
+import org.kotlincrypto.random.CryptoRand
 
 
 /**
@@ -1020,7 +1018,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
      * Generates a cryptoraphically random nonce of NONCE_LENGTH_IN_BYTES bytes.
      */
     private fun generateRandomNonce(): ByteArray {
-      return SecureRandom().nextBytesOf(NONCE_LENGTH_IN_BYTES)
+      return CryptoRand.Default.nextBytes(ByteArray(NONCE_LENGTH_IN_BYTES))
     }
   }
 }
