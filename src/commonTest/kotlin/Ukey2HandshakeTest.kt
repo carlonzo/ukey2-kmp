@@ -87,6 +87,10 @@ class Ukey2HandshakeTest {
     val serverContext = server.toConnectionContext()
     assertContextsCompatible(clientContext, serverContext)
 
+    val payload = "hello".encodeToByteArray()
+    assertContentEquals(payload, serverContext.decodeMessageFromPeer(clientContext.encodeMessageToPeer(payload)))
+    assertContentEquals(payload, clientContext.decodeMessageFromPeer(serverContext.encodeMessageToPeer(payload)))
+
     assertEquals(Ukey2Handshake.State.ALREADY_USED, client.getHandshakeState())
     assertEquals(Ukey2Handshake.State.ALREADY_USED, server.getHandshakeState())
   }
@@ -591,6 +595,7 @@ class Ukey2HandshakeTest {
    * different on every run.
    */
 
+  @Test
   fun testRandomItemsDifferentOnEveryRun() {
 
     val numberOfRuns = 50

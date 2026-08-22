@@ -181,9 +181,8 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     }
   }
 
-  // Clients need to store a map of message 3's (client finishes) for each commitment.
-  private val rawMessage3Map: MutableMap<HandshakeCipher, ByteArray> = mutableMapOf()
-  private val handshakeCipher: HandshakeCipher?
+  private var rawMessage3: ByteArray? = null
+  private val handshakeCipher: HandshakeCipher
   private val handshakeRole: HandshakeRole
   private var handshakeState: InternalState
   private val ourKeyPair: EcKeyPair
@@ -231,22 +230,14 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    * down.
    */
   init {
-    if (cipher == null) {
-      throwIllegalArgumentException("Invalid handshake cipher")
-      throw HandshakeException("unreachable")
-    }
-
-    handshakeCipher = cipher
+    handshakeCipher = cipher ?: throwIllegalArgumentException("Invalid handshake cipher")
     handshakeRole = when (state) {
       InternalState.CLIENT_START -> HandshakeRole.CLIENT
       InternalState.SERVER_START -> HandshakeRole.SERVER
-      else -> {
-        throwIllegalStateException("Invalid handshake state")
-        throw IllegalStateException("unreachable")
-      }
+      else -> throwIllegalStateException("Invalid handshake state")
     }
     handshakeState = state
-    ourKeyPair = genKeyPair(cipher)
+    ourKeyPair = genKeyPair(handshakeCipher)
   }
 
   /**
@@ -272,23 +263,17 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
       InternalState.CLIENT_AFTER_SERVER_INIT -> {
         // Make sure we have a message 3 for the chosen cipher.
 
-        val message = rawMessage3Map[handshakeCipher] ?: run {
-          throwIllegalStateException(
-              "Client state is CLIENT_AFTER_SERVER_INIT, and cipher is "
-                  + handshakeCipher
-                  + ", but no corresponding raw client finished message has been generated"
-          )
-          throw IllegalStateException("unreachable")
-        }
+        val message = rawMessage3 ?: throwIllegalStateException(
+          "Client state is CLIENT_AFTER_SERVER_INIT, and cipher is "
+            + handshakeCipher
+            + ", but no corresponding raw client finished message has been generated"
+        )
 
         handshakeState = InternalState.HANDSHAKE_VERIFICATION_NEEDED
         return message
       }
 
-      else -> {
-        throwIllegalStateException("Cannot get next message in state: $handshakeState")
-        throw IllegalStateException("unreachable")
-      }
+      else -> throwIllegalStateException("Cannot get next message in state: $handshakeState")
     }
   }
 
@@ -306,25 +291,19 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     }
     if (handshakeState != InternalState.HANDSHAKE_VERIFICATION_NEEDED) {
       throwIllegalStateException("Unexpected state: $handshakeState")
-      throw IllegalStateException("unreachable")
     }
 
-    try {
-      derivedSecretKey = getSecretKeyAgreement(ourKeyPair, theirPublicKey)
+    derivedSecretKey = try {
+      getSecretKeyAgreement(ourKeyPair, theirPublicKey)
     } catch (e: Exception) {
-      // unreachable in practice
       throwHandshakeException(e)
-      throw IllegalStateException("unreachable")
     }
 
     val info: ByteArray = rawMessage1 + rawMessage2
-    val salt: ByteArray
-    try {
-      salt = "UKEY2 v1 auth".encodeToByteArray(throwOnInvalidSequence = true)
+    val salt: ByteArray = try {
+      "UKEY2 v1 auth".encodeToByteArray(throwOnInvalidSequence = true)
     } catch (e: CharacterCodingException) {
-      // unreachable in practice
       throwHandshakeException(e)
-      throw IllegalStateException("unreachable")
     }
     val authString = hkdf(derivedSecretKey, salt, info)
 
@@ -371,10 +350,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
         handshakeState = InternalState.HANDSHAKE_VERIFICATION_NEEDED
       }
 
-      else -> {
-        throwIllegalStateException("Cannot parse message in state $handshakeState")
-        throw IllegalStateException("unreachable")
-      }
+      else -> throwIllegalStateException("Cannot parse message in state $handshakeState")
     }
   }
 
@@ -403,14 +379,11 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
   @Throws(HandshakeException::class)
   fun toConnectionContext(): D2DConnectionContext {
 
-    require(handshakeState == InternalState.HANDSHAKE_FINISHED) {
+    if (handshakeState != InternalState.HANDSHAKE_FINISHED) {
       throwIllegalStateException("Unexpected state: $handshakeState")
-      "Unexpected state: $handshakeState"
     }
-
-    require(::derivedSecretKey.isInitialized) {
+    if (!::derivedSecretKey.isInitialized) {
       throwIllegalStateException("Unexpected state error: derived key is null")
-      "Unexpected state error: derived key is null"
     }
 
     val info: ByteArray = rawMessage1 + rawMessage2
@@ -455,7 +428,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     val serverInit = Ukey2ServerInit(
         version = VERSION,
         random = generateRandomNonce().toByteString(),
-        handshake_cipher = handshakeCipher?.value,
+        handshake_cipher = handshakeCipher.value,
         public_key = publicKey.encodeByteString()
     )
 
@@ -492,7 +465,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE,
           "Can't parse message 1 " + e.message
       )
-      throw IllegalStateException("unreachable")
     }
 
     // Verify that message_type == Type.CLIENT_INIT; send a BAD_MESSAGE_TYPE message if mismatch
@@ -501,7 +473,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE_TYPE,
           "Expected, but did not find ClientInit message type"
       )
-      throw IllegalStateException("unreachable")
     }
 
     // Deserialize message_data as a ClientInit message; send a BAD_MESSAGE_DATA message if
@@ -511,7 +482,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE_DATA,
           "Expected message data, but didn't find it"
       )
-      throw IllegalStateException("unreachable")
     }
 
     val clientInit: Ukey2ClientInit
@@ -522,7 +492,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE_DATA,
           "Can't parse message data into ClientInit"
       )
-      throw IllegalStateException("unreachable")
     }
 
     // Check that version == VERSION; send BAD_VERSION message if mismatch
@@ -532,19 +501,16 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
 
     if (clientInit.version != VERSION) {
       throwAlertException(Ukey2Alert.AlertType.BAD_VERSION, "ClientInit version mismatch")
-      throw IllegalStateException("unreachable")
     }
 
     // Check that random is exactly NONCE_LENGTH_IN_BYTES bytes; send Alert.BAD_RANDOM message if
     // not.
     if (clientInit.random == null) {
       throwAlertException(Ukey2Alert.AlertType.BAD_RANDOM, "ClientInit missing random")
-      throw IllegalStateException("unreachable")
     }
 
     if (clientInit.random.toByteArray().size != NONCE_LENGTH_IN_BYTES) {
       throwAlertException(Ukey2Alert.AlertType.BAD_RANDOM, "ClientInit has incorrect nonce length")
-      throw IllegalStateException("unreachable")
     }
 
     // Check to see if any of the handshake_cipher in cipher_commitment are acceptable. Servers
@@ -564,11 +530,10 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
             Ukey2Alert.AlertType.BAD_HANDSHAKE_CIPHER,
             "ClientInit has improperly formatted cipher commitment"
         )
-        throw IllegalStateException("unreachable")
       }
 
       // TODO(aczeskis): for now we only support one cipher, eventually support more
-      if (commitment.handshake_cipher == handshakeCipher?.value) {
+      if (commitment.handshake_cipher == handshakeCipher.value) {
         theirCommitment = commitment.commitment.toByteArray()
       }
     }
@@ -577,14 +542,12 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_HANDSHAKE_CIPHER,
           "No acceptable commitments found"
       )
-      throw IllegalStateException("unreachable")
     }
 
     // Checks that next_protocol contains a protocol that the server supports. Send a
     // BAD_NEXT_PROTOCOL message if not. We currently only support one protocol
     if (NEXT_PROTOCOL != clientInit.next_protocol) {
       throwAlertException(Ukey2Alert.AlertType.BAD_NEXT_PROTOCOL, "Incorrect next protocol")
-      throw IllegalStateException("unreachable")
     }
 
     // Store raw message for AUTH_STRING computation
@@ -606,7 +569,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE,
           "Can't parse message 2 " + e.message
       )
-      throw IllegalStateException("unreachable")
     }
 
     // Verify that message_type == Type.SERVER_INIT; send a BAD_MESSAGE_TYPE message if mismatch
@@ -616,12 +578,10 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE_TYPE,
           "Expected, but did not find message type"
       )
-      throw IllegalStateException("unreachable")
     }
     if (message.message_type == Ukey2Message.Type.ALERT) {
       handshakeState = InternalState.HANDSHAKE_ERROR
       throwHandshakeMessageFromAlertMessage(message)
-      throw IllegalStateException("unreachable")
     }
 
     if (message.message_type != Ukey2Message.Type.SERVER_INIT) {
@@ -629,7 +589,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE_TYPE,
           "Expected, but did not find SERVER_INIT message type"
       )
-      throw IllegalStateException("unreachable")
     }
 
     // Deserialize message_data as a ServerInit message; send a BAD_MESSAGE_DATA message if
@@ -639,7 +598,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE_DATA,
           "Expected message data, but didn't find it"
       )
-      throw IllegalStateException("unreachable")
     }
     val serverInit: Ukey2ServerInit
     try {
@@ -649,37 +607,31 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_MESSAGE_DATA,
           "Can't parse message data into ServerInit"
       )
-      throw IllegalStateException("unreachable")
     }
 
     // Check that version == VERSION; send BAD_VERSION message if mismatch
     if (serverInit.version == null) {
       throwAlertException(Ukey2Alert.AlertType.BAD_VERSION, "ServerInit missing version")
-      throw IllegalStateException("unreachable")
     }
 
     if (serverInit.version != VERSION) {
       throwAlertException(Ukey2Alert.AlertType.BAD_VERSION, "ServerInit version mismatch")
-      throw IllegalStateException("unreachable")
     }
 
     // Check that random is exactly NONCE_LENGTH_IN_BYTES bytes; send Alert.BAD_RANDOM message if
     // not.
     if (serverInit.random == null) {
       throwAlertException(Ukey2Alert.AlertType.BAD_RANDOM, "ServerInit missing random")
-      throw IllegalStateException("unreachable")
     }
 
     if (serverInit.random.toByteArray().size != NONCE_LENGTH_IN_BYTES) {
       throwAlertException(Ukey2Alert.AlertType.BAD_RANDOM, "ServerInit has incorrect nonce length")
-      throw IllegalStateException("unreachable")
     }
 
     // Check that handshake_cipher matches a handshake cipher that was sent in
     // ClientInit.cipher_commitments. If not, send a BAD_HANDSHAKECIPHER message
     if (serverInit.handshake_cipher == null) {
       throwAlertException(Ukey2Alert.AlertType.BAD_HANDSHAKE_CIPHER, "No handshake cipher found")
-      throw IllegalStateException("unreachable")
     }
     var serverCipher: HandshakeCipher? = null
     for (cipher: HandshakeCipher in HandshakeCipher.values()) {
@@ -693,14 +645,12 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
           Ukey2Alert.AlertType.BAD_HANDSHAKE_CIPHER,
           "No acceptable handshake cipher found"
       )
-      throw IllegalStateException("unreachable")
     }
 
     // Check that public_key parses into a correct public key structure. If not, send a
     // BAD_PUBLIC_KEY message.
     if (serverInit.public_key == null) {
       throwAlertException(Ukey2Alert.AlertType.BAD_PUBLIC_KEY, "No public key found in ServerInit")
-      throw IllegalStateException("unreachable")
     }
 
     theirPublicKey = runCatching { parseP256PublicKey(serverInit.public_key.toByteArray()) }
@@ -723,7 +673,6 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
       message = Ukey2Message.ADAPTER.decode(handshakeMessage)
     } catch (e: Exception) {
       throwHandshakeException("Can't parse message 3", e)
-      throw IllegalStateException("unreachable")
     }
 
     // Verify that message_type == Type.CLIENT_FINISH; terminate connection if mismatch occurs
@@ -732,11 +681,9 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     }
     if (message.message_type == Ukey2Message.Type.ALERT) {
       throwHandshakeMessageFromAlertMessage(message)
-      throw IllegalStateException("unreachable")
     }
     if (message.message_type != Ukey2Message.Type.CLIENT_FINISH) {
       throwHandshakeException("Expected, but did not find CLIENT_FINISH message type")
-      throw IllegalStateException("unreachable")
     }
 
     // Verify that the hash of the ClientFinished matches the expected commitment from ClientInit.
@@ -747,80 +694,41 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     // deserialization fails.
     if (message.message_data == null) {
       throwHandshakeException("Expected message data, but didn't find it")
-      throw IllegalStateException("unreachable")
     }
     val clientFinished: Ukey2ClientFinished
     try {
       clientFinished = Ukey2ClientFinished.ADAPTER.decode(message.message_data)
     } catch (e: Exception) {
       throwHandshakeException(e)
-      throw IllegalStateException("unreachable")
     }
 
     // Check that public_key parses into a correct public key structure. If not, terminate the
     // connection.
     if (clientFinished.public_key == null) {
       throwHandshakeException("No public key found in ClientFinished")
-      throw IllegalStateException("unreachable")
     }
     try {
       theirPublicKey = parseP256PublicKey(clientFinished.public_key.toByteArray())
     } catch (e: AlertException) {
       // Wrap in a HandshakeException because error should not be sent on the wire.
       throwHandshakeException(e)
-      throw IllegalStateException("unreachable")
     }
   }
 
-  @Throws(HandshakeException::class)
   private fun verifyCommitment(handshakeMessage: ByteArray) {
-    val actualClientFinishHash: ByteArray
-    when (handshakeCipher) {
-      HandshakeCipher.P256_SHA512 -> actualClientFinishHash = sha512(handshakeMessage)
-      else -> {       // should be unreachable
-        throwIllegalStateException("Unexpected handshakeCipher")
-        throw IllegalStateException("unreachable")
-      }
-    }
-
-    // Time constant after Java SE 6 Update 17
-    // See http://www.oracle.com/technetwork/java/javase/6u17-141447.html
-    if (!isEqualDigest(actualClientFinishHash, theirCommitment)) {
+    if (!constantTimeEquals(sha512(handshakeMessage), theirCommitment)) {
       throwHandshakeException("Commitment does not match")
     }
   }
 
-  // Copied from MessageDigest.isEqual()
-  private fun isEqualDigest(digesta: ByteArray?, digestb: ByteArray?): Boolean {
-    if (digesta == null || digestb == null) {
-      return false
-    }
-    val lenA = digesta.size
-    val lenB = digestb.size
-    if (lenB == 0) {
-      return lenA == 0
-    }
-    var result = 0
-    result = result or lenA - lenB
-
-    // time-constant comparison
-    for (i in 0 until lenA) {
-      // If i >= lenB, indexB is 0; otherwise, i.
-      val indexB = (i - lenB ushr 31) * i
-      result = result or (digesta[i].toInt() xor digestb[indexB].toInt())
-    }
-    return result == 0
-  }
-
   @Throws(HandshakeException::class)
-  private fun throwHandshakeMessageFromAlertMessage(message: Ukey2Message?) {
+  private fun throwHandshakeMessageFromAlertMessage(message: Ukey2Message?): Nothing {
     if (message?.message_data != null) {
       val alert: Ukey2Alert
       try {
         alert = Ukey2Alert.ADAPTER.decode(message.message_data)
       } catch (e: Exception) {
         throwHandshakeException("Cannot parse alert message", e)
-        throw IllegalStateException("unreachable")
       }
       if (alert.type != null && alert.error_message != null) {
         throwHandshakeException(
@@ -861,13 +769,13 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
   @Throws(HandshakeException::class)
   private fun generateP256SHA512Commitment(): Ukey2ClientInit.CipherCommitment {
     // Generate the corresponding finished message if it's not done yet
-    if (!rawMessage3Map.containsKey(HandshakeCipher.P256_SHA512)) {
+    if (rawMessage3 == null) {
       generateP256SHA512ClientFinished(ourKeyPair)
     }
 
     return Ukey2ClientInit.CipherCommitment(
         handshake_cipher = Ukey2HandshakeCipher.P256_SHA512,
-        commitment = sha512(rawMessage3Map.getValue(HandshakeCipher.P256_SHA512)).toByteString()
+        commitment = sha512(rawMessage3!!).toByteString()
     )
   }
 
@@ -881,7 +789,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
         public_key = encodedKey
     )
 
-    rawMessage3Map[HandshakeCipher.P256_SHA512] = makeUkey2Message(Ukey2Message.Type.CLIENT_FINISH, clientFinished.encode())
+    rawMessage3 = makeUkey2Message(Ukey2Message.Type.CLIENT_FINISH, clientFinished.encode())
     return clientFinished
   }
 
@@ -903,17 +811,12 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
 
     when (messageType) {
       Ukey2Message.Type.ALERT, Ukey2Message.Type.CLIENT_INIT, Ukey2Message.Type.SERVER_INIT, Ukey2Message.Type.CLIENT_FINISH -> {}
-      else -> {
-        throwIllegalArgumentException("Invalid message type: $messageType")
-        throw IllegalStateException("unreachable")
-      }
+      else -> throwIllegalArgumentException("Invalid message type: $messageType")
     }
 
-    // Alerts a blank message data field
     if (messageType != Ukey2Message.Type.ALERT) {
       if (messageData == null || messageData.isEmpty()) {
         throwIllegalArgumentException("Cannot send empty message data for non-alert messages")
-        throw IllegalStateException("unreachable")
       }
     }
 
@@ -947,37 +850,32 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     return EcSha512.hash(input)
   }
 
-  // Exception wrappers that remember to set the handshake state to ERROR
-  @Throws(AlertException::class, HandshakeException::class)
-  private fun throwAlertException(alertType: Ukey2Alert.AlertType, alertLogStatement: String) {
+  private fun throwAlertException(alertType: Ukey2Alert.AlertType, alertLogStatement: String): Nothing {
     handshakeState = InternalState.HANDSHAKE_ERROR
     throw AlertException(alertLogStatement, makeAlertMessage(alertType, alertLogStatement))
   }
 
-  @Throws(HandshakeException::class)
-  private fun throwHandshakeException(logMessage: String) {
+  private fun throwHandshakeException(logMessage: String): Nothing {
     handshakeState = InternalState.HANDSHAKE_ERROR
     throw HandshakeException(logMessage)
   }
 
-  @Throws(HandshakeException::class)
-  private fun throwHandshakeException(e: Exception) {
+  private fun throwHandshakeException(e: Exception): Nothing {
     handshakeState = InternalState.HANDSHAKE_ERROR
     throw HandshakeException(e)
   }
 
-  @Throws(HandshakeException::class)
-  private fun throwHandshakeException(logMessage: String, e: Exception) {
+  private fun throwHandshakeException(logMessage: String, e: Exception): Nothing {
     handshakeState = InternalState.HANDSHAKE_ERROR
     throw HandshakeException(logMessage, e)
   }
 
-  private fun throwIllegalStateException(logMessage: String) {
+  private fun throwIllegalStateException(logMessage: String): Nothing {
     handshakeState = InternalState.HANDSHAKE_ERROR
     throw IllegalStateException(logMessage)
   }
 
-  private fun throwIllegalArgumentException(logMessage: String) {
+  private fun throwIllegalArgumentException(logMessage: String): Nothing {
     handshakeState = InternalState.HANDSHAKE_ERROR
     throw IllegalArgumentException(logMessage)
   }
