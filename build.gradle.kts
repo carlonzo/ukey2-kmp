@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.Family
 
 plugins {
-  kotlin("multiplatform") version "2.4.10"
+  kotlin("multiplatform") version "2.4.20"
   id("com.squareup.wire") version "7.0.3"
   id("com.vanniktech.maven.publish") version "0.37.0"
 }
