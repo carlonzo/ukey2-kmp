@@ -15,6 +15,7 @@
 import com.carlonzo.ukey2.Ukey2Handshake
 import com.carlonzo.ukey2.Ukey2Handshake.AlertException
 import com.carlonzo.ukey2.Ukey2Handshake.HandshakeCipher
+import com.carlonzo.ukey2.Ukey2Handshake.HandshakeException
 import com.carlonzo.ukey2.d2d.D2DConnectionContext
 import com.carlonzo.ukey2.d2d.D2DConnectionContextV1
 import com.google.security.cryptauth.lib.securegcm.Ukey2ClientFinished
@@ -22,6 +23,11 @@ import com.google.security.cryptauth.lib.securegcm.Ukey2ClientInit
 import com.google.security.cryptauth.lib.securegcm.Ukey2HandshakeCipher
 import com.google.security.cryptauth.lib.securegcm.Ukey2Message
 import com.google.security.cryptauth.lib.securegcm.Ukey2ServerInit
+import com.google.security.cryptauth.lib.securemessage.EcP256PublicKey
+import com.google.security.cryptauth.lib.securemessage.GenericPublicKey
+import com.google.security.cryptauth.lib.securemessage.PublicKeyType
+import dev.whyoleg.cryptography.CryptographyProvider
+import dev.whyoleg.cryptography.algorithms.SHA512
 import okio.ByteString.Companion.toByteString
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -694,6 +700,81 @@ class Ukey2HandshakeTest {
     } catch (e: IllegalArgumentException) {
       // success
     }
+  }
+
+  @Test
+  fun testPointNotOnCurveInServerInitRejected() {
+    val client = Ukey2Handshake.forInitiator(HandshakeCipher.P256_SHA512)
+    val server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
+    val clientInitMessage = client.getNextHandshakeMessage()
+    server.parseHandshakeMessage(clientInitMessage)
+    val serverInitMessage = server.getNextHandshakeMessage()
+    val message = Ukey2Message.ADAPTER.decode(serverInitMessage)
+    val serverInit = Ukey2ServerInit.ADAPTER.decode(message.message_data!!)
+
+    val badPublicKey = GenericPublicKey(
+      type = PublicKeyType.EC_P256,
+      ec_p256_public_key = EcP256PublicKey(
+        x = byteArrayOf(1).toByteString(),
+        y = byteArrayOf(1).toByteString(),
+      )
+    )
+    val badServerInit = serverInit.copy(public_key = badPublicKey.encodeByteString())
+    val badMessage = message.copy(message_data = badServerInit.encodeByteString()).encode()
+
+    try {
+      client.parseHandshakeMessage(badMessage)
+      fail("Client did not reject point not on curve in ServerInit")
+    } catch (e: AlertException) {
+      // success
+    }
+    assertEquals(Ukey2Handshake.State.ERROR, client.getHandshakeState())
+  }
+
+  @Test
+  fun testPointNotOnCurveInClientFinishedRejected() {
+    val badPublicKey = GenericPublicKey(
+      type = PublicKeyType.EC_P256,
+      ec_p256_public_key = EcP256PublicKey(
+        x = byteArrayOf(1).toByteString(),
+        y = byteArrayOf(1).toByteString(),
+      )
+    )
+    val badClientFinished = Ukey2ClientFinished(
+      public_key = badPublicKey.encodeByteString()
+    )
+    val badClientFinishedMessage = Ukey2Message(
+      message_type = Ukey2Message.Type.CLIENT_FINISH,
+      message_data = badClientFinished.encodeByteString()
+    ).encode()
+
+    val clientInit = Ukey2ClientInit(
+      version = Ukey2Handshake.VERSION,
+      random = ByteArray(32).toByteString(),
+      cipher_commitments = listOf(
+        Ukey2ClientInit.CipherCommitment(
+          handshake_cipher = Ukey2HandshakeCipher.P256_SHA512,
+          commitment = CryptographyProvider.Default.get(SHA512).hasher().hashBlocking(badClientFinishedMessage).toByteString()
+        )
+      ),
+      next_protocol = "AES_256_CBC-HMAC_SHA256"
+    )
+    val clientInitMessage = Ukey2Message(
+      message_type = Ukey2Message.Type.CLIENT_INIT,
+      message_data = clientInit.encodeByteString()
+    ).encode()
+
+    val server = Ukey2Handshake.forResponder(HandshakeCipher.P256_SHA512)
+    server.parseHandshakeMessage(clientInitMessage)
+    server.getNextHandshakeMessage() // ServerInit
+
+    try {
+      server.parseHandshakeMessage(badClientFinishedMessage)
+      fail("Server did not reject point not on curve in ClientFinished")
+    } catch (e: HandshakeException) {
+      // success
+    }
+    assertEquals(Ukey2Handshake.State.ERROR, server.getHandshakeState())
   }
 
   /**

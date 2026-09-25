@@ -16,13 +16,6 @@ package com.carlonzo.ukey2
 import com.carlonzo.ukey2.d2d.D2DConnectionContext
 import com.carlonzo.ukey2.d2d.D2DConnectionContextV1
 import com.carlonzo.ukey2.d2d.D2DCryptoOps.d2dSalt
-import com.carterharrison.ecdsa.EcDhKeyAgreement
-import com.carterharrison.ecdsa.EcKeyGenerator
-import com.carterharrison.ecdsa.EcKeyPair
-import com.carterharrison.ecdsa.EcPoint
-import com.carterharrison.ecdsa.curves.Secp256r1
-import com.carterharrison.ecdsa.hash.EcSha256
-import com.carterharrison.ecdsa.hash.EcSha512
 import com.google.security.cryptauth.lib.securegcm.Ukey2Alert
 import com.google.security.cryptauth.lib.securegcm.Ukey2ClientFinished
 import com.google.security.cryptauth.lib.securegcm.Ukey2ClientInit
@@ -32,8 +25,11 @@ import com.google.security.cryptauth.lib.securegcm.Ukey2ServerInit
 import com.google.security.cryptauth.lib.securemessage.EcP256PublicKey
 import com.google.security.cryptauth.lib.securemessage.GenericPublicKey
 import com.google.security.cryptauth.lib.securemessage.PublicKeyType
+import dev.whyoleg.cryptography.CryptographyProvider
+import dev.whyoleg.cryptography.algorithms.EC
+import dev.whyoleg.cryptography.algorithms.ECDH
+import dev.whyoleg.cryptography.random.CryptographyRandom
 import okio.ByteString.Companion.toByteString
-import org.kotlincrypto.random.CryptoRand
 
 
 /**
@@ -181,12 +177,18 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     }
   }
 
+  class HandshakeException : Exception {
+    constructor(message: String? = null) : super(message)
+    constructor(message: String?, cause: Throwable?) : super(message, cause)
+    constructor(cause: Throwable?) : super(cause)
+  }
+
   private var rawMessage3: ByteArray? = null
   private val handshakeCipher: HandshakeCipher
   private val handshakeRole: HandshakeRole
   private var handshakeState: InternalState
-  private val ourKeyPair: EcKeyPair
-  private lateinit var theirPublicKey: EcPoint
+  private val ourKeyPair: ECDH.KeyPair
+  private lateinit var theirPublicKey: ECDH.PublicKey
   private lateinit var derivedSecretKey: ByteArray
 
   // Servers need to store client commitments.
@@ -311,11 +313,11 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     return authString.take(byteLength).toByteArray()
   }
 
-  private fun getSecretKeyAgreement(ourKeyPair: EcKeyPair, theirPublicKey: EcPoint): ByteArray {
-    //    TODO reduce public key to 32 bytes?
-    val sharedSecretKey = EcDhKeyAgreement.keyAgreement(ourKeyPair, theirPublicKey)
+  private fun getSecretKeyAgreement(ourKeyPair: ECDH.KeyPair, theirPublicKey: ECDH.PublicKey): ByteArray {
+    val sharedSecretKey = ourKeyPair.privateKey.sharedSecretGenerator()
+      .generateSharedSecretToByteArrayBlocking(theirPublicKey)
 
-    return EcSha256.hash(sharedSecretKey.xByteArray.takeLast(32).toByteArray())
+    return sha256(sharedSecretKey)
   }
 
   /**
@@ -442,9 +444,12 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    * @throws HandshakeException
    */
   @Throws(HandshakeException::class)
-  private fun genKeyPair(cipher: HandshakeCipher): EcKeyPair {
+  private fun genKeyPair(cipher: HandshakeCipher): ECDH.KeyPair {
     return when (cipher) {
-      HandshakeCipher.P256_SHA512 -> EcKeyGenerator.newInstance(Secp256r1)
+      HandshakeCipher.P256_SHA512 -> {
+        val ecdh = CryptographyProvider.Default.get(ECDH)
+        ecdh.keyPairGenerator(EC.Curve.P256).generateKeyBlocking()
+      }
     }
   }
 
@@ -709,7 +714,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     }
     try {
       theirPublicKey = parseP256PublicKey(clientFinished.public_key.toByteArray())
-    } catch (e: AlertException) {
+    } catch (e: Exception) {
       // Wrap in a HandshakeException because error should not be sent on the wire.
       throwHandshakeException(e)
     }
@@ -748,14 +753,24 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    * Parses an encoded public P256 key.
    */
   @Throws(AlertException::class, HandshakeException::class)
-  private fun parseP256PublicKey(encodedPublicKey: ByteArray): EcPoint {
+  private fun parseP256PublicKey(encodedPublicKey: ByteArray): ECDH.PublicKey {
 
     val genericPublicKey = GenericPublicKey.ADAPTER.decode(encodedPublicKey)
 
     return when (genericPublicKey.type) {
       PublicKeyType.EC_P256 -> {
         val publicKey = genericPublicKey.ec_p256_public_key ?: throw IllegalStateException("key should not be null")
-        EcPoint.parseFromByteArray(publicKey.x.toByteArray(), publicKey.y.toByteArray(), Secp256r1)
+        val rawX = fromBigEndianTwosComplement(publicKey.x.toByteArray())
+        val rawY = fromBigEndianTwosComplement(publicKey.y.toByteArray())
+        requireP256PointOnCurve(rawX, rawY)
+        val uncompressed = ByteArray(65).also {
+          it[0] = 0x04
+          rawX.copyInto(it, destinationOffset = 1)
+          rawY.copyInto(it, destinationOffset = 33)
+        }
+        val ecdh = CryptographyProvider.Default.get(ECDH)
+        ecdh.publicKeyDecoder(EC.Curve.P256)
+          .decodeFromByteArrayBlocking(EC.PublicKey.Format.RAW.Uncompressed, uncompressed)
       }
 
       PublicKeyType.RSA2048 -> throw UnsupportedOperationException("RSA2048 not supported")
@@ -782,7 +797,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
   /**
    * Generates and records a [Ukey2ClientFinished] message for the P256_SHA512 cipher.
    */
-  private fun generateP256SHA512ClientFinished(p256KeyPair: EcKeyPair): Ukey2ClientFinished {
+  private fun generateP256SHA512ClientFinished(p256KeyPair: ECDH.KeyPair): Ukey2ClientFinished {
     val encodedKey = getGenericPublicKey(p256KeyPair).encodeByteString()
 
     val clientFinished = Ukey2ClientFinished(
@@ -793,12 +808,18 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     return clientFinished
   }
 
-  private fun getGenericPublicKey(keyPair: EcKeyPair): GenericPublicKey {
+  private fun getGenericPublicKey(keyPair: ECDH.KeyPair): GenericPublicKey {
+    val uncompressed = keyPair.publicKey.encodeToByteArrayBlocking(EC.PublicKey.Format.RAW.Uncompressed)
+    require(uncompressed.size == 65 && uncompressed[0] == 0x04.toByte()) {
+      "Invalid uncompressed public key encoding"
+    }
+    val rawX = uncompressed.copyOfRange(1, 33)
+    val rawY = uncompressed.copyOfRange(33, 65)
     return GenericPublicKey(
         type = PublicKeyType.EC_P256,
         ec_p256_public_key = EcP256PublicKey(
-            x = keyPair.publicKey.xByteArray.toByteString(),
-            y = keyPair.publicKey.yByteArray.toByteString(),
+            x = toBigEndianTwosComplement(rawX).toByteString(),
+            y = toBigEndianTwosComplement(rawY).toByteString(),
         )
     )
   }
@@ -847,7 +868,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    */
   @Throws(HandshakeException::class)
   private fun sha512(input: ByteArray): ByteArray {
-    return EcSha512.hash(input)
+    return com.carlonzo.ukey2.sha512(input)
   }
 
   private fun throwAlertException(alertType: Ukey2Alert.AlertType, alertLogStatement: String): Nothing {
@@ -916,13 +937,9 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
      * Generates a cryptoraphically random nonce of NONCE_LENGTH_IN_BYTES bytes.
      */
     private fun generateRandomNonce(): ByteArray {
-      return CryptoRand.Default.nextBytes(ByteArray(NONCE_LENGTH_IN_BYTES))
+      return CryptographyRandom.nextBytes(NONCE_LENGTH_IN_BYTES)
     }
   }
 }
 
-private class HandshakeException : Exception {
-  constructor(message: String) : super(message)
-  constructor(message: String, cause: Throwable) : super(message, cause)
-  constructor(cause: Throwable) : super(cause)
-}
+typealias HandshakeException = Ukey2Handshake.HandshakeException
