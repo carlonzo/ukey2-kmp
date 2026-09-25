@@ -29,7 +29,6 @@ kotlin {
 
   sourceSets {
     commonMain.dependencies {
-      implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
       implementation("dev.whyoleg.cryptography:cryptography-core:0.6.0")
       implementation("dev.whyoleg.cryptography:cryptography-random:0.6.0")
       implementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0")
