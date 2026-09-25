@@ -1,6 +1,6 @@
 package com.carlonzo.ukey2.d2d
 
-import com.carterharrison.ecdsa.hash.EcSha256
+import com.carlonzo.ukey2.sha256
 import okio.Buffer
 
 // Copyright 2020 Google LLC
@@ -45,7 +45,7 @@ class D2DConnectionContextV1 internal constructor(
       val firstKeyBytes = if (encodeKeyHash < decodeKeyHash) encodeKeyBytes else decodeKeyBytes
       val secondKeyBytes = if (firstKeyBytes.contentEquals(encodeKeyBytes)) decodeKeyBytes else encodeKeyBytes
 
-      return EcSha256.hash(
+      return sha256(
         D2DCryptoOps.d2dSalt + firstKeyBytes + secondKeyBytes
       )
     }

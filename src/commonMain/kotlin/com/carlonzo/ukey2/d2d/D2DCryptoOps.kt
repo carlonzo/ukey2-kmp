@@ -2,7 +2,7 @@ package com.carlonzo.ukey2.d2d
 
 import com.carlonzo.ukey2.constantTimeEquals
 import com.carlonzo.ukey2.hkdf
-import com.carterharrison.ecdsa.hash.EcSha256
+import com.carlonzo.ukey2.sha256
 import com.google.security.cryptauth.lib.securegcm.GcmMetadata
 import com.google.security.cryptauth.lib.securemessage.EncScheme
 import com.google.security.cryptauth.lib.securemessage.Header
@@ -10,15 +10,17 @@ import com.google.security.cryptauth.lib.securemessage.HeaderAndBody
 import com.google.security.cryptauth.lib.securemessage.HeaderAndBodyInternal
 import com.google.security.cryptauth.lib.securemessage.SecureMessage
 import com.google.security.cryptauth.lib.securemessage.SigScheme
-import diglol.crypto.AesCbc
-import kotlinx.coroutines.runBlocking
+import dev.whyoleg.cryptography.CryptographyProvider
+import dev.whyoleg.cryptography.DelicateCryptographyApi
+import dev.whyoleg.cryptography.algorithms.AES
 import okio.Buffer
 import okio.ByteString.Companion.toByteString
 
+@OptIn(DelicateCryptographyApi::class)
 internal object D2DCryptoOps {
 
-  internal val d2dSalt = EcSha256.hash("D2D".encodeToByteArray())
-  private val derivationSalt = EcSha256.hash("SecureMessage".encodeToByteArray())
+  internal val d2dSalt by lazy { sha256("D2D".encodeToByteArray()) }
+  private val derivationSalt by lazy { sha256("SecureMessage".encodeToByteArray()) }
   private const val DIGEST_LENGTH = 20
   private const val SECURE_GCM_VERSION = 1
   internal const val AES_BLOCK_SIZE = 16
@@ -62,24 +64,21 @@ internal object D2DCryptoOps {
   }
 
   fun digest(data: ByteArray): ByteArray {
-    return EcSha256.hash(data).take(DIGEST_LENGTH).toByteArray()
+    return sha256(data).take(DIGEST_LENGTH).toByteArray()
   }
 
   fun encrypt(encryptionKey: ByteArray, iv: ByteArray, plaintext: ByteArray): ByteArray {
     val derivedKey = deriveAes256KeyFor(encryptionKey, ENC_PURPOSE)
-    return runBlocking {
-      val result = AesCbc(derivedKey, iv).encrypt(plaintext)
-      // diglol prefixes the IV; strip it so the SecureMessage header remains the sole IV copy
-      result.copyOfRange(iv.size, result.size)
-    }
+    val aesCbc = CryptographyProvider.Default.get(AES.CBC)
+    val key = aesCbc.keyDecoder().decodeFromByteArrayBlocking(AES.Key.Format.RAW, derivedKey)
+    return key.cipher().encryptWithIvBlocking(iv, plaintext)
   }
 
   fun decrypt(decryptionKey: ByteArray, iv: ByteArray, ciphertext: ByteArray): ByteArray {
     val derivedKey = deriveAes256KeyFor(decryptionKey, ENC_PURPOSE)
-    return runBlocking {
-      // diglol expects ciphertext to be prefixed with the IV
-      AesCbc(derivedKey, iv).decrypt(iv + ciphertext)
-    }
+    val aesCbc = CryptographyProvider.Default.get(AES.CBC)
+    val key = aesCbc.keyDecoder().decodeFromByteArrayBlocking(AES.Key.Format.RAW, derivedKey)
+    return key.cipher().decryptWithIvBlocking(iv, ciphertext)
   }
 
   fun sign(signingKey: ByteArray, data: ByteArray): ByteArray {

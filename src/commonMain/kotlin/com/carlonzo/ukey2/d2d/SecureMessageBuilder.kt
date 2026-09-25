@@ -18,9 +18,9 @@ import com.google.security.cryptauth.lib.securemessage.Header
 import com.google.security.cryptauth.lib.securemessage.HeaderAndBodyInternal
 import com.google.security.cryptauth.lib.securemessage.SecureMessage
 import com.google.security.cryptauth.lib.securemessage.SigScheme
+import dev.whyoleg.cryptography.random.CryptographyRandom
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
-import org.kotlincrypto.random.CryptoRand
 
 internal class SecureMessageBuilder {
   private var publicMetadata: ByteString? = null
@@ -39,7 +39,7 @@ internal class SecureMessageBuilder {
   fun buildSignCryptedMessage(
     signingKey: ByteArray, encryptionKey: ByteArray, body: ByteArray
   ): SecureMessage {
-    val iv = CryptoRand.Default.nextBytes(ByteArray(D2DCryptoOps.AES_BLOCK_SIZE))
+    val iv = CryptographyRandom.nextBytes(D2DCryptoOps.AES_BLOCK_SIZE)
     val header: ByteArray = buildHeader(iv).encode()
 
     val taggedBody = if (taggedPlaintextRequired(signingKey, encryptionKey)) {

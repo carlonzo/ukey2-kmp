@@ -23,6 +23,7 @@ dependencies {
 ### Supported platforms
 The project currently supports the following platforms:
 * JVM
+* Linux (linuxX64, linuxArm64)
 * iOS (iosArm64, iosSimulatorArm64)
 * macosArm64
 

@@ -1,26 +1,37 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.konan.target.Family
+
 plugins {
   kotlin("multiplatform") version "2.4.10"
-  id("com.squareup.wire") version "6.4.6"
+  id("com.squareup.wire") version "7.0.3"
   id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 group = "com.carlonzo.ukey2"
-version = "1.0"
+version = "1.1"
 
 kotlin {
   jvmToolchain(11)
   jvm()
 
+  linuxX64()
+  linuxArm64()
+
   iosArm64()
   iosSimulatorArm64()
   macosArm64()
 
+  targets.withType<KotlinNativeTarget>().matching { it.konanTarget.family == Family.LINUX }.configureEach {
+    binaries.all {
+      linkerOpts("-Wl,--as-needed")
+    }
+  }
+
   sourceSets {
     commonMain.dependencies {
-      implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-      implementation("com.carlonzo.ecdsa:ecdsa:0.1.0")
-      implementation("org.kotlincrypto.random:crypto-rand:0.6.0")
-      implementation("com.diglol.crypto:cipher:0.2.0")
+      implementation("dev.whyoleg.cryptography:cryptography-core:0.6.0")
+      implementation("dev.whyoleg.cryptography:cryptography-random:0.6.0")
+      implementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0")
     }
     commonTest.dependencies {
       implementation(kotlin("test"))
@@ -35,7 +46,9 @@ wire {
 
 mavenPublishing {
   publishToMavenCentral()
-  signAllPublications()
+  if (project.hasProperty("signingInMemoryKey")) {
+    signAllPublications()
+  }
 
   pom {
     name.set("ukey2-kmp")
