@@ -6,7 +6,11 @@ on:
       - '*.*.*'
 
 jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
   publish:
+    needs: test
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,7 +19,7 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew build publishAndReleaseToMavenCentral -Pversion=${{ github.ref_name }}
+      - run: ./gradlew publishAndReleaseToMavenCentral -Pversion=${{ github.ref_name }}
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
