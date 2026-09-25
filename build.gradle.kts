@@ -8,7 +8,6 @@ plugins {
 }
 
 group = "com.carlonzo.ukey2"
-version = "1.1"
 
 kotlin {
   jvmToolchain(11)
