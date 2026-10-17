@@ -66,7 +66,7 @@ val checkNoGeneratedTypesInPublicApi = tasks.register("checkNoGeneratedTypesInPu
       return@doLast
     }
     val offenders = root.walkTopDown()
-      .filter { it.isFile && (it.name.endsWith(".api") || it.name.endsWith(".klib.api")) }
+      .filter { it.isFile && it.name.endsWith(".api") }
       .flatMap { file ->
         file.readLines().mapIndexedNotNull { index, line ->
           if (leakRegex.containsMatchIn(line)) {
@@ -87,7 +87,7 @@ val checkNoGeneratedTypesInPublicApi = tasks.register("checkNoGeneratedTypesInPu
 }
 
 checkNoGeneratedTypesInPublicApi.configure {
-  mustRunAfter("apiCheck")
+  mustRunAfter("apiCheck", "apiDump", "jvmApiDump", "klibApiDump")
 }
 
 tasks.named("check") {

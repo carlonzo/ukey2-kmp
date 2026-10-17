@@ -96,7 +96,7 @@ To create a new handshake session, use the following code:
 - `D2DConnectionContext` constructor and `incrementSequenceNumberForEncoding` / `incrementSequenceNumberForDecoding` (no external subclassing)
 - `D2DConnectionContextV1` (use `D2DConnectionContext`)
 
-The public API no longer exposes Wire or protobuf types. The library is built with explicit API mode, and binary API dumps live in `api/` (`./gradlew apiDump` after intentional API changes). Generated protobuf classes under `com.google.security.cryptauth.lib` remain public but are not considered part of the supported API.
+The public API no longer exposes Wire or protobuf types. The library is built with explicit API mode, and binary API dumps live in `api/` (`./gradlew apiDump` after intentional API changes). Generated protobuf classes under `com.google.security.cryptauth.lib` remain public but are not considered part of the supported API. `apiCheck` and the leak check run as part of `./gradlew check` and `./gradlew build`.
 
 ## Development
 
