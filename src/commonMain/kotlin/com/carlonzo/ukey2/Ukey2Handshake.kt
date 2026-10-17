@@ -109,7 +109,7 @@ import okio.ByteString.Companion.toByteString
  * }
 ` *
  */
-class Ukey2Handshake private constructor(state: InternalState, cipher: HandshakeCipher?) {
+public class Ukey2Handshake private constructor(state: InternalState, cipher: HandshakeCipher?) {
   /**
    * Handshake States. Meaning of states:
    *
@@ -129,13 +129,13 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    *  * ERROR: The handshake produced an error and should be destroyed.
    *
    */
-  enum class State {
+  public enum class State {
     IN_PROGRESS,
     VERIFICATION_NEEDED,
     VERIFICATION_IN_PROGRESS,
     FINISHED,
     ALREADY_USED,
-    ERROR
+    ERROR,
   }
 
   /**
@@ -152,8 +152,8 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    *
    * Note that these should correspond to values in device_to_device_messages.proto.
    */
-  enum class HandshakeCipher(val value: Ukey2HandshakeCipher) {
-    P256_SHA512(Ukey2HandshakeCipher.P256_SHA512);
+  public enum class HandshakeCipher(internal val value: Ukey2HandshakeCipher) {
+    P256_SHA512(Ukey2HandshakeCipher.P256_SHA512),
   }
 
   /**
@@ -162,7 +162,10 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    * error to the other party in the handshake. Meanwhile, the [.getMessage] method can be
    * used to get a log-able error message.
    */
-  class AlertException(alertMessageToLog: String?, alertMessageToSend: Ukey2Alert) : Exception(alertMessageToLog) {
+  public class AlertException internal constructor(
+    alertMessageToLog: String?,
+    alertMessageToSend: Ukey2Alert,
+  ) : Exception(alertMessageToLog) {
     private val alertMessageToSend: Ukey2Alert
 
     init {
@@ -172,15 +175,15 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     /**
      * @return a message suitable for sending to other member of handshake.
      */
-    fun getAlertMessageToSend(): ByteArray {
+    public fun getAlertMessageToSend(): ByteArray {
       return alertMessageToSend.encode()
     }
   }
 
-  class HandshakeException : Exception {
-    constructor(message: String? = null) : super(message)
-    constructor(message: String?, cause: Throwable?) : super(message, cause)
-    constructor(cause: Throwable?) : super(cause)
+  public class HandshakeException : Exception {
+    public constructor(message: String? = null) : super(message)
+    public constructor(message: String?, cause: Throwable?) : super(message, cause)
+    public constructor(cause: Throwable?) : super(cause)
   }
 
   private var rawMessage3: ByteArray? = null
@@ -248,7 +251,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    * @throws HandshakeException if an unrecoverable error occurs and the connection should be shut
    * down.
    */
-  fun getNextHandshakeMessage(): ByteArray {
+  public fun getNextHandshakeMessage(): ByteArray {
     when (handshakeState) {
       InternalState.CLIENT_START -> {
         rawMessage1 = makeUkey2Message(Ukey2Message.Type.CLIENT_INIT, makeClientInitMessage())
@@ -287,7 +290,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    *
    * @param byteLength length of output in bytes. Min length is 1; max length is 32.
    */
-  fun getVerificationString(byteLength: Int): ByteArray {
+  public fun getVerificationString(byteLength: Int): ByteArray {
     if (byteLength < 1 || byteLength > 32) {
       throwIllegalArgumentException("Minimum length is 1 byte, max is 32 bytes")
     }
@@ -325,7 +328,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    * string obtained via [.getVerificationString]; Note: this should only be called when
    * the state returned byte [.getHandshakeState] is [State.VERIFICATION_IN_PROGRESS].
    */
-  fun verifyHandshake() {
+  public fun verifyHandshake(): Unit {
     if (handshakeState != InternalState.HANDSHAKE_VERIFICATION_IN_PROGRESS) {
       throwIllegalStateException("Unexpected state: $handshakeState")
     }
@@ -335,7 +338,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
   /**
    * Parses the given handshake message.
    */
-  fun parseHandshakeMessage(handshakeMessage: ByteArray) {
+  public fun parseHandshakeMessage(handshakeMessage: ByteArray): Unit {
     when (handshakeState) {
       InternalState.SERVER_START -> {
         parseMessage1(handshakeMessage)
@@ -359,7 +362,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
   /**
    * Returns the current state of the handshake. See [State].
    */
-  fun getHandshakeState(): State {
+  public fun getHandshakeState(): State {
     return when (handshakeState) {
       InternalState.CLIENT_START, InternalState.CLIENT_WAITING_FOR_SERVER_INIT, InternalState.CLIENT_AFTER_SERVER_INIT, InternalState.SERVER_START, InternalState.SERVER_WAITING_FOR_CLIENT_FINISHED, InternalState.SERVER_AFTER_CLIENT_INIT ->         // fallback intended -- these are all in-progress states
         State.IN_PROGRESS
@@ -379,7 +382,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
    * @throws HandshakeException
    */
   @Throws(HandshakeException::class)
-  fun toConnectionContext(): D2DConnectionContext {
+  public fun toConnectionContext(): D2DConnectionContext {
 
     if (handshakeState != InternalState.HANDSHAKE_FINISHED) {
       throwIllegalStateException("Unexpected state: $handshakeState")
@@ -901,7 +904,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
     throw IllegalArgumentException(logMessage)
   }
 
-  companion object {
+  public companion object {
     /**
      * Creates a [Ukey2Handshake] with a particular cipher that can be used by an initiator /
      * client.
@@ -909,7 +912,7 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
      * @throws HandshakeException
      */
     @Throws(HandshakeException::class)
-    fun forInitiator(cipher: HandshakeCipher?): Ukey2Handshake {
+    public fun forInitiator(cipher: HandshakeCipher?): Ukey2Handshake {
       return Ukey2Handshake(InternalState.CLIENT_START, cipher)
     }
 
@@ -920,12 +923,12 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
      * @throws HandshakeException
      */
     @Throws(HandshakeException::class)
-    fun forResponder(cipher: HandshakeCipher?): Ukey2Handshake {
+    public fun forResponder(cipher: HandshakeCipher?): Ukey2Handshake {
       return Ukey2Handshake(InternalState.SERVER_START, cipher)
     }
 
     // Maximum version of the handshake supported by this class.
-    val VERSION = 1
+    internal val VERSION: Int = 1
 
     // Random nonce is fixed at 32 bytes (as per go/ukey2).
     private val NONCE_LENGTH_IN_BYTES = 32
@@ -942,4 +945,4 @@ class Ukey2Handshake private constructor(state: InternalState, cipher: Handshake
   }
 }
 
-typealias HandshakeException = Ukey2Handshake.HandshakeException
+public typealias HandshakeException = Ukey2Handshake.HandshakeException

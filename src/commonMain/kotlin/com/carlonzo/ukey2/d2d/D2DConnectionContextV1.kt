@@ -23,7 +23,7 @@ import okio.Buffer
  * version, communication is fully duplex, as separate keys and sequence nubmers are used for
  * encoding and decoding.
  */
-class D2DConnectionContextV1 internal constructor(
+internal class D2DConnectionContextV1 internal constructor(
   override val encodeKey: ByteArray,
   override val decodeKey: ByteArray,
   private val initialEncodeSequenceNumber: Int,
@@ -50,11 +50,11 @@ class D2DConnectionContextV1 internal constructor(
       )
     }
 
-  override fun incrementSequenceNumberForEncoding() {
+  internal override fun incrementSequenceNumberForEncoding(): Unit {
     sequenceNumberForEncoding += 1
   }
 
-  override fun incrementSequenceNumberForDecoding() {
+  internal override fun incrementSequenceNumberForDecoding(): Unit {
     sequenceNumberForDecoding += 1
   }
 
@@ -77,6 +77,6 @@ class D2DConnectionContextV1 internal constructor(
   }
 
   companion object {
-    const val PROTOCOL_VERSION = 1
+    const val PROTOCOL_VERSION: Int = 1
   }
 }
