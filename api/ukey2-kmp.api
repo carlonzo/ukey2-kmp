@@ -1,0 +1,65 @@
+public final class com/carlonzo/ukey2/Ukey2Handshake {
+	public static final field Companion Lcom/carlonzo/ukey2/Ukey2Handshake$Companion;
+	public synthetic fun <init> (Lcom/carlonzo/ukey2/Ukey2Handshake$InternalState;Lcom/carlonzo/ukey2/Ukey2Handshake$HandshakeCipher;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getHandshakeState ()Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+	public final fun getNextHandshakeMessage ()[B
+	public final fun getVerificationString (I)[B
+	public final fun parseHandshakeMessage ([B)V
+	public final fun toConnectionContext ()Lcom/carlonzo/ukey2/d2d/D2DConnectionContext;
+	public final fun verifyHandshake ()V
+}
+
+public final class com/carlonzo/ukey2/Ukey2Handshake$AlertException : java/lang/Exception {
+	public final fun getAlertMessageToSend ()[B
+}
+
+public final class com/carlonzo/ukey2/Ukey2Handshake$Companion {
+	public final fun forInitiator (Lcom/carlonzo/ukey2/Ukey2Handshake$HandshakeCipher;)Lcom/carlonzo/ukey2/Ukey2Handshake;
+	public final fun forResponder (Lcom/carlonzo/ukey2/Ukey2Handshake$HandshakeCipher;)Lcom/carlonzo/ukey2/Ukey2Handshake;
+}
+
+public final class com/carlonzo/ukey2/Ukey2Handshake$HandshakeCipher : java/lang/Enum {
+	public static final field P256_SHA512 Lcom/carlonzo/ukey2/Ukey2Handshake$HandshakeCipher;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/carlonzo/ukey2/Ukey2Handshake$HandshakeCipher;
+	public static fun values ()[Lcom/carlonzo/ukey2/Ukey2Handshake$HandshakeCipher;
+}
+
+public final class com/carlonzo/ukey2/Ukey2Handshake$HandshakeException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public fun <init> (Ljava/lang/Throwable;)V
+}
+
+public final class com/carlonzo/ukey2/Ukey2Handshake$State : java/lang/Enum {
+	public static final field ALREADY_USED Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+	public static final field ERROR Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+	public static final field FINISHED Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+	public static final field IN_PROGRESS Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+	public static final field VERIFICATION_IN_PROGRESS Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+	public static final field VERIFICATION_NEEDED Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+	public static fun values ()[Lcom/carlonzo/ukey2/Ukey2Handshake$State;
+}
+
+public abstract class com/carlonzo/ukey2/d2d/D2DConnectionContext {
+	public static final field Companion Lcom/carlonzo/ukey2/d2d/D2DConnectionContext$Companion;
+	public final fun decodeMessageFromPeer ([B)[B
+	public final fun decodeMessageFromPeerAsString ([B)Ljava/lang/String;
+	public final fun encodeMessageToPeer (Ljava/lang/String;)[B
+	public final fun encodeMessageToPeer ([B)[B
+	public abstract fun getDecodeKey ()[B
+	public abstract fun getEncodeKey ()[B
+	public final fun getProtocolVersion ()I
+	public abstract fun getSequenceNumberForDecoding ()I
+	public abstract fun getSequenceNumberForEncoding ()I
+	public abstract fun getSessionUnique ()[B
+	public abstract fun saveSession ()[B
+}
+
+public final class com/carlonzo/ukey2/d2d/D2DConnectionContext$Companion {
+	public final fun fromSavedSession ([B)Lcom/carlonzo/ukey2/d2d/D2DConnectionContext;
+}
+

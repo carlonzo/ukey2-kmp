@@ -1,3 +1,4 @@
+import kotlinx.validation.ExperimentalBCVApi
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 import org.jetbrains.kotlin.konan.target.Family
 
@@ -5,11 +6,13 @@ plugins {
   kotlin("multiplatform") version "2.4.20"
   id("com.squareup.wire") version "7.0.4"
   id("com.vanniktech.maven.publish") version "0.37.0"
+  id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2"
 }
 
 group = "com.carlonzo.ukey2"
 
 kotlin {
+  explicitApi()
   jvmToolchain(11)
   jvm()
 
@@ -41,6 +44,54 @@ kotlin {
 wire {
   kotlin {
   }
+}
+
+apiValidation {
+  ignoredPackages += "com.google.security.cryptauth.lib"
+  @OptIn(ExperimentalBCVApi::class)
+  klib {
+    enabled = true
+  }
+}
+
+val checkNoGeneratedTypesInPublicApi = tasks.register("checkNoGeneratedTypesInPublicApi") {
+  group = "verification"
+  description = "Fails if generated protobuf, Wire, or okio.ByteString types appear in public API dumps."
+  val apiDir = layout.projectDirectory.dir("api")
+  inputs.dir(apiDir).optional()
+  doLast {
+    val leakRegex = Regex("com[./]google[./]security|com[./]squareup[./]wire|okio[./]ByteString")
+    val root = apiDir.asFile
+    if (!root.exists()) {
+      return@doLast
+    }
+    val offenders = root.walkTopDown()
+      .filter { it.isFile && it.name.endsWith(".api") }
+      .flatMap { file ->
+        file.readLines().mapIndexedNotNull { index, line ->
+          if (leakRegex.containsMatchIn(line)) {
+            "${file.relativeTo(root.parentFile)}:${index + 1}: ${line.trimEnd()}"
+          } else {
+            null
+          }
+        }
+      }
+      .toList()
+    if (offenders.isNotEmpty()) {
+      error(
+        "Generated types leaked into public API dump:\n" +
+          offenders.joinToString("\n")
+      )
+    }
+  }
+}
+
+checkNoGeneratedTypesInPublicApi.configure {
+  mustRunAfter("apiCheck", "apiDump", "jvmApiDump", "klibApiDump")
+}
+
+tasks.named("check") {
+  dependsOn(checkNoGeneratedTypesInPublicApi)
 }
 
 mavenPublishing {

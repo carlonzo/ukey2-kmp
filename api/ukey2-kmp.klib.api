@@ -1,0 +1,81 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, linuxArm64, linuxX64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.carlonzo.ukey2:ukey2-kmp>
+abstract class com.carlonzo.ukey2.d2d/D2DConnectionContext { // com.carlonzo.ukey2.d2d/D2DConnectionContext|null[0]
+    abstract val decodeKey // com.carlonzo.ukey2.d2d/D2DConnectionContext.decodeKey|{}decodeKey[0]
+        abstract fun <get-decodeKey>(): kotlin/ByteArray // com.carlonzo.ukey2.d2d/D2DConnectionContext.decodeKey.<get-decodeKey>|<get-decodeKey>(){}[0]
+    abstract val encodeKey // com.carlonzo.ukey2.d2d/D2DConnectionContext.encodeKey|{}encodeKey[0]
+        abstract fun <get-encodeKey>(): kotlin/ByteArray // com.carlonzo.ukey2.d2d/D2DConnectionContext.encodeKey.<get-encodeKey>|<get-encodeKey>(){}[0]
+    abstract val sequenceNumberForDecoding // com.carlonzo.ukey2.d2d/D2DConnectionContext.sequenceNumberForDecoding|{}sequenceNumberForDecoding[0]
+        abstract fun <get-sequenceNumberForDecoding>(): kotlin/Int // com.carlonzo.ukey2.d2d/D2DConnectionContext.sequenceNumberForDecoding.<get-sequenceNumberForDecoding>|<get-sequenceNumberForDecoding>(){}[0]
+    abstract val sequenceNumberForEncoding // com.carlonzo.ukey2.d2d/D2DConnectionContext.sequenceNumberForEncoding|{}sequenceNumberForEncoding[0]
+        abstract fun <get-sequenceNumberForEncoding>(): kotlin/Int // com.carlonzo.ukey2.d2d/D2DConnectionContext.sequenceNumberForEncoding.<get-sequenceNumberForEncoding>|<get-sequenceNumberForEncoding>(){}[0]
+    abstract val sessionUnique // com.carlonzo.ukey2.d2d/D2DConnectionContext.sessionUnique|{}sessionUnique[0]
+        abstract fun <get-sessionUnique>(): kotlin/ByteArray? // com.carlonzo.ukey2.d2d/D2DConnectionContext.sessionUnique.<get-sessionUnique>|<get-sessionUnique>(){}[0]
+    final val protocolVersion // com.carlonzo.ukey2.d2d/D2DConnectionContext.protocolVersion|{}protocolVersion[0]
+        final fun <get-protocolVersion>(): kotlin/Int // com.carlonzo.ukey2.d2d/D2DConnectionContext.protocolVersion.<get-protocolVersion>|<get-protocolVersion>(){}[0]
+
+    abstract fun saveSession(): kotlin/ByteArray? // com.carlonzo.ukey2.d2d/D2DConnectionContext.saveSession|saveSession(){}[0]
+    final fun decodeMessageFromPeer(kotlin/ByteArray): kotlin/ByteArray // com.carlonzo.ukey2.d2d/D2DConnectionContext.decodeMessageFromPeer|decodeMessageFromPeer(kotlin.ByteArray){}[0]
+    final fun decodeMessageFromPeerAsString(kotlin/ByteArray): kotlin/String // com.carlonzo.ukey2.d2d/D2DConnectionContext.decodeMessageFromPeerAsString|decodeMessageFromPeerAsString(kotlin.ByteArray){}[0]
+    final fun encodeMessageToPeer(kotlin/ByteArray): kotlin/ByteArray // com.carlonzo.ukey2.d2d/D2DConnectionContext.encodeMessageToPeer|encodeMessageToPeer(kotlin.ByteArray){}[0]
+    final fun encodeMessageToPeer(kotlin/String): kotlin/ByteArray // com.carlonzo.ukey2.d2d/D2DConnectionContext.encodeMessageToPeer|encodeMessageToPeer(kotlin.String){}[0]
+
+    final object Companion { // com.carlonzo.ukey2.d2d/D2DConnectionContext.Companion|null[0]
+        final fun fromSavedSession(kotlin/ByteArray): com.carlonzo.ukey2.d2d/D2DConnectionContext // com.carlonzo.ukey2.d2d/D2DConnectionContext.Companion.fromSavedSession|fromSavedSession(kotlin.ByteArray){}[0]
+    }
+}
+
+final class com.carlonzo.ukey2/Ukey2Handshake { // com.carlonzo.ukey2/Ukey2Handshake|null[0]
+    final fun getHandshakeState(): com.carlonzo.ukey2/Ukey2Handshake.State // com.carlonzo.ukey2/Ukey2Handshake.getHandshakeState|getHandshakeState(){}[0]
+    final fun getNextHandshakeMessage(): kotlin/ByteArray // com.carlonzo.ukey2/Ukey2Handshake.getNextHandshakeMessage|getNextHandshakeMessage(){}[0]
+    final fun getVerificationString(kotlin/Int): kotlin/ByteArray // com.carlonzo.ukey2/Ukey2Handshake.getVerificationString|getVerificationString(kotlin.Int){}[0]
+    final fun parseHandshakeMessage(kotlin/ByteArray) // com.carlonzo.ukey2/Ukey2Handshake.parseHandshakeMessage|parseHandshakeMessage(kotlin.ByteArray){}[0]
+    final fun toConnectionContext(): com.carlonzo.ukey2.d2d/D2DConnectionContext // com.carlonzo.ukey2/Ukey2Handshake.toConnectionContext|toConnectionContext(){}[0]
+    final fun verifyHandshake() // com.carlonzo.ukey2/Ukey2Handshake.verifyHandshake|verifyHandshake(){}[0]
+
+    final enum class HandshakeCipher : kotlin/Enum<com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher> { // com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher|null[0]
+        enum entry P256_SHA512 // com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher.P256_SHA512|null[0]
+
+        final val entries // com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher.entries|#static{}entries[0]
+            final fun <get-entries>(): kotlin.enums/EnumEntries<com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher> // com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher.entries.<get-entries>|<get-entries>#static(){}[0]
+
+        final fun valueOf(kotlin/String): com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher // com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher.valueOf|valueOf#static(kotlin.String){}[0]
+        final fun values(): kotlin/Array<com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher> // com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher.values|values#static(){}[0]
+    }
+
+    final enum class State : kotlin/Enum<com.carlonzo.ukey2/Ukey2Handshake.State> { // com.carlonzo.ukey2/Ukey2Handshake.State|null[0]
+        enum entry ALREADY_USED // com.carlonzo.ukey2/Ukey2Handshake.State.ALREADY_USED|null[0]
+        enum entry ERROR // com.carlonzo.ukey2/Ukey2Handshake.State.ERROR|null[0]
+        enum entry FINISHED // com.carlonzo.ukey2/Ukey2Handshake.State.FINISHED|null[0]
+        enum entry IN_PROGRESS // com.carlonzo.ukey2/Ukey2Handshake.State.IN_PROGRESS|null[0]
+        enum entry VERIFICATION_IN_PROGRESS // com.carlonzo.ukey2/Ukey2Handshake.State.VERIFICATION_IN_PROGRESS|null[0]
+        enum entry VERIFICATION_NEEDED // com.carlonzo.ukey2/Ukey2Handshake.State.VERIFICATION_NEEDED|null[0]
+
+        final val entries // com.carlonzo.ukey2/Ukey2Handshake.State.entries|#static{}entries[0]
+            final fun <get-entries>(): kotlin.enums/EnumEntries<com.carlonzo.ukey2/Ukey2Handshake.State> // com.carlonzo.ukey2/Ukey2Handshake.State.entries.<get-entries>|<get-entries>#static(){}[0]
+
+        final fun valueOf(kotlin/String): com.carlonzo.ukey2/Ukey2Handshake.State // com.carlonzo.ukey2/Ukey2Handshake.State.valueOf|valueOf#static(kotlin.String){}[0]
+        final fun values(): kotlin/Array<com.carlonzo.ukey2/Ukey2Handshake.State> // com.carlonzo.ukey2/Ukey2Handshake.State.values|values#static(){}[0]
+    }
+
+    final class AlertException : kotlin/Exception { // com.carlonzo.ukey2/Ukey2Handshake.AlertException|null[0]
+        final fun getAlertMessageToSend(): kotlin/ByteArray // com.carlonzo.ukey2/Ukey2Handshake.AlertException.getAlertMessageToSend|getAlertMessageToSend(){}[0]
+    }
+
+    final class HandshakeException : kotlin/Exception { // com.carlonzo.ukey2/Ukey2Handshake.HandshakeException|null[0]
+        constructor <init>(kotlin/String? = ...) // com.carlonzo.ukey2/Ukey2Handshake.HandshakeException.<init>|<init>(kotlin.String?){}[0]
+        constructor <init>(kotlin/String?, kotlin/Throwable?) // com.carlonzo.ukey2/Ukey2Handshake.HandshakeException.<init>|<init>(kotlin.String?;kotlin.Throwable?){}[0]
+        constructor <init>(kotlin/Throwable?) // com.carlonzo.ukey2/Ukey2Handshake.HandshakeException.<init>|<init>(kotlin.Throwable?){}[0]
+    }
+
+    final object Companion { // com.carlonzo.ukey2/Ukey2Handshake.Companion|null[0]
+        final fun forInitiator(com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher?): com.carlonzo.ukey2/Ukey2Handshake // com.carlonzo.ukey2/Ukey2Handshake.Companion.forInitiator|forInitiator(com.carlonzo.ukey2.Ukey2Handshake.HandshakeCipher?){}[0]
+        final fun forResponder(com.carlonzo.ukey2/Ukey2Handshake.HandshakeCipher?): com.carlonzo.ukey2/Ukey2Handshake // com.carlonzo.ukey2/Ukey2Handshake.Companion.forResponder|forResponder(com.carlonzo.ukey2.Ukey2Handshake.HandshakeCipher?){}[0]
+    }
+}

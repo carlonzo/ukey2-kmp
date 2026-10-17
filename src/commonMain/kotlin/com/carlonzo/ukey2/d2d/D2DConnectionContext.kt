@@ -25,11 +25,11 @@ import okio.ByteString.Companion.toByteString
  * Subclasses keep track of the keys shared with the other device, and of the sequence in which the
  * messages are expected.
  */
-abstract class D2DConnectionContext protected constructor(
+public abstract class D2DConnectionContext internal constructor(
   /**
    * @return the version of the D2D protocol.
    */
-  val protocolVersion: Int
+  public val protocolVersion: Int
 ) {
 
   /**
@@ -38,7 +38,7 @@ abstract class D2DConnectionContext protected constructor(
    *
    * @param payload the payload that should be encrypted.
    */
-  fun encodeMessageToPeer(payload: ByteArray): ByteArray {
+  public fun encodeMessageToPeer(payload: ByteArray): ByteArray {
     incrementSequenceNumberForEncoding()
 
     val message = createDeviceToDeviceMessage(
@@ -63,7 +63,7 @@ abstract class D2DConnectionContext protected constructor(
    * @see .encodeMessageToPeer
    * @param payload the payload that should be encrypted.
    */
-  fun encodeMessageToPeer(payload: String): ByteArray {
+  public fun encodeMessageToPeer(payload: String): ByteArray {
     return encodeMessageToPeer(payload.encodeToByteArray())
   }
 
@@ -75,7 +75,7 @@ abstract class D2DConnectionContext protected constructor(
    * @param message the message that should be encrypted.
    * @throws SignatureException if the message from the remote peer did not pass verification
    */
-  fun decodeMessageFromPeer(message: ByteArray): ByteArray {
+  public fun decodeMessageFromPeer(message: ByteArray): ByteArray {
     val payload: Payload = D2DCryptoOps.verifydecryptPayload(message, decodeKey)
 
     if (PayloadType.DEVICE_TO_DEVICE_MESSAGE != payload.payloadType) {
@@ -99,29 +99,29 @@ abstract class D2DConnectionContext protected constructor(
    *
    * @param message the message that should be encrypted.
    */
-  fun decodeMessageFromPeerAsString(message: ByteArray): String {
+  public fun decodeMessageFromPeerAsString(message: ByteArray): String {
     return message.decodeToString(throwOnInvalidSequence = true)
   }
 
-  abstract val sessionUnique: ByteArray?
+  public abstract val sessionUnique: ByteArray?
 
   /**
    * Increments the sequence number used for encoding messages.
    */
-  protected abstract fun incrementSequenceNumberForEncoding()
+  internal abstract fun incrementSequenceNumberForEncoding(): Unit
 
   /**
    * Increments the sequence number used for decoding messages.
    */
-  protected abstract fun incrementSequenceNumberForDecoding()
+  internal abstract fun incrementSequenceNumberForDecoding(): Unit
 
-  abstract val sequenceNumberForEncoding: Int
+  public abstract val sequenceNumberForEncoding: Int
 
-  abstract val sequenceNumberForDecoding: Int
+  public abstract val sequenceNumberForDecoding: Int
 
-  abstract val encodeKey: ByteArray
+  public abstract val encodeKey: ByteArray
 
-  abstract val decodeKey: ByteArray
+  public abstract val decodeKey: ByteArray
 
   /**
    * Creates a saved session that can later be used for resumption.  Note, this must be stored in a
@@ -129,12 +129,12 @@ abstract class D2DConnectionContext protected constructor(
    *
    * @return the saved session, suitable for resumption.
    */
-  abstract fun saveSession(): ByteArray?
+  public abstract fun saveSession(): ByteArray?
 
-  companion object {
+  public companion object {
 
     // package-private
-    fun createDeviceToDeviceMessage(message: ByteArray, sequenceNumber: Int): DeviceToDeviceMessage {
+    internal fun createDeviceToDeviceMessage(message: ByteArray, sequenceNumber: Int): DeviceToDeviceMessage {
 
       return DeviceToDeviceMessage(
         sequence_number = sequenceNumber,
@@ -150,7 +150,7 @@ abstract class D2DConnectionContext protected constructor(
      *
      * @return a resumed context from a saved session.
      */
-    fun fromSavedSession(savedSessionInfo: ByteArray): D2DConnectionContext {
+    public fun fromSavedSession(savedSessionInfo: ByteArray): D2DConnectionContext {
       if (savedSessionInfo.isEmpty()) {
         throw IllegalArgumentException("savedSessionInfo null or too short")
       }
