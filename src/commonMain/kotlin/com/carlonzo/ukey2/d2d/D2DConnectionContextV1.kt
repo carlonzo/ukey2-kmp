@@ -68,7 +68,7 @@ internal class D2DConnectionContextV1 internal constructor(
    */
   override fun saveSession(): ByteArray {
     return Buffer()
-      .writeInt(1)
+      .writeByte(PROTOCOL_VERSION)
       .writeInt(sequenceNumberForEncoding)
       .writeInt(sequenceNumberForDecoding)
       .write(encodeKey)
