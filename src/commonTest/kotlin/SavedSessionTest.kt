@@ -4,6 +4,7 @@ import com.carlonzo.ukey2.d2d.D2DConnectionContext
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 
 class SavedSessionTest {
@@ -11,8 +12,11 @@ class SavedSessionTest {
   @Test
   fun saveSessionHasCorrectFormat() {
     val (client, server) = handshake()
-    exchange(client, server, "ping")
+    exchange(client, server, "ping-1")
+    exchange(client, server, "ping-2")
+    exchange(client, server, "ping-3")
     exchange(server, client, "pong")
+    assertNotEquals(client.sequenceNumberForEncoding, client.sequenceNumberForDecoding)
 
     val saved = assertNotNull(client.saveSession())
     assertEquals(73, saved.size)
@@ -28,7 +32,7 @@ class SavedSessionTest {
     val (client, server) = handshake()
     exchange(client, server, "one")
     exchange(client, server, "two")
-    exchange(server, client, "three")
+    exchange(client, server, "three")
     exchange(server, client, "four")
 
     val saved = assertNotNull(client.saveSession())
@@ -45,7 +49,9 @@ class SavedSessionTest {
   @Test
   fun restoredContextsInterop() {
     val (client, server) = handshake()
-    exchange(client, server, "warmup-c")
+    exchange(client, server, "warmup-c1")
+    exchange(client, server, "warmup-c2")
+    exchange(client, server, "warmup-c3")
     exchange(server, client, "warmup-s")
 
     val clientSave = assertNotNull(client.saveSession())
