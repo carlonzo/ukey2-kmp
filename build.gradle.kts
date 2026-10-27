@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.konan.target.Family
 
 plugins {
   kotlin("multiplatform") version "2.4.20"
-  id("com.squareup.wire") version "7.0.4"
+  id("com.squareup.wire") version "7.1.2"
   id("com.vanniktech.maven.publish") version "0.37.0"
   id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.18.2"
 }
